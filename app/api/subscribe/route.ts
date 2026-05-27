@@ -13,6 +13,10 @@ interface SubscribeBody {
   authCountries: string[];
 }
 
+function escHtml(s: string): string {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
 function welcomeHtml(b: SubscribeBody): string {
   const remoteLabel: Record<string, string> = {
     remote: "remote only",
@@ -23,8 +27,8 @@ function welcomeHtml(b: SubscribeBody): string {
   const row = (label: string, value: string) =>
     value
       ? `<tr>
-          <td style="padding:4px 0;color:#7a7a6e;width:140px;vertical-align:top">&gt; ${label}</td>
-          <td style="padding:4px 0;color:#14140f">${value}</td>
+          <td style="padding:4px 0;color:#7a7a6e;width:140px;vertical-align:top">&gt; ${escHtml(label)}</td>
+          <td style="padding:4px 0;color:#14140f">${escHtml(value)}</td>
         </tr>`
       : "";
 
@@ -122,6 +126,23 @@ export async function POST(req: Request) {
 
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     return Response.json({ error: "valid email required" }, { status: 400 });
+  }
+
+  if (!Array.isArray(stack) || !Array.isArray(keywords) || !Array.isArray(authCountries)) {
+    return Response.json({ error: "invalid field types" }, { status: 400 });
+  }
+
+  if (stack.length > 20 || keywords.length > 12 || authCountries.length > 30) {
+    return Response.json({ error: "too many values" }, { status: 400 });
+  }
+
+  if (
+    typeof location !== "string" || location.length > 200 ||
+    stack.some((s) => typeof s !== "string" || s.length > 100) ||
+    keywords.some((k) => typeof k !== "string" || k.length > 100) ||
+    authCountries.some((c) => typeof c !== "string" || c.length > 10)
+  ) {
+    return Response.json({ error: "invalid field values" }, { status: 400 });
   }
 
   const audienceId = process.env.RESEND_AUDIENCE_ID;

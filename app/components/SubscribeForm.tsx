@@ -1,6 +1,10 @@
 "use client";
 
-import { useState, useRef, KeyboardEvent } from "react";
+import { useState, useRef, forwardRef, useImperativeHandle, KeyboardEvent } from "react";
+
+interface TagInputHandle {
+  getValueWithPending(): string[];
+}
 
 const STACK_OPTIONS = [
   { value: "backend", label: "backend" },
@@ -14,25 +18,18 @@ const STACK_OPTIONS = [
 const KEYWORD_SUGGESTIONS = ["Python", "TypeScript", "PostgreSQL", "PyTorch", "Terraform", "React"];
 const AUTH_SUGGESTIONS = ["UK", "CA", "EU", "IN", "UA"];
 
-function TagInput({
-  tags,
-  onAdd,
-  onRemove,
-  placeholder,
-  suggestions,
-  maxTags = 12,
-}: {
+const TagInput = forwardRef<TagInputHandle, {
   tags: string[];
   onAdd: (v: string) => void;
   onRemove: (v: string) => void;
   placeholder: string;
   suggestions: string[];
   maxTags?: number;
-}) {
+}>(function TagInput({ tags, onAdd, onRemove, placeholder, suggestions, maxTags = 12 }, ref) {
   const inputRef = useRef<HTMLInputElement>(null);
 
   function commit(raw: string) {
-    const val = raw.replace(/,$/, "").trim();
+    const val = raw.replace(/,+$/, "").trim();
     if (!val) return;
     if (tags.length >= maxTags) return;
     if (tags.some((t) => t.toLowerCase() === val.toLowerCase())) return;
@@ -57,6 +54,16 @@ function TagInput({
       input.value = "";
     }
   }
+
+  useImperativeHandle(ref, () => ({
+    getValueWithPending() {
+      const val = (inputRef.current?.value ?? "").replace(/,+$/, "").trim();
+      if (val && tags.length < maxTags && !tags.some((t) => t.toLowerCase() === val.toLowerCase())) {
+        return [...tags, val];
+      }
+      return tags;
+    },
+  }));
 
   const unusedSuggestions = suggestions.filter(
     (s) => !tags.some((t) => t.toLowerCase() === s.toLowerCase())
@@ -93,9 +100,12 @@ function TagInput({
       )}
     </>
   );
-}
+});
 
 export default function SubscribeForm() {
+  const keywordsRef = useRef<TagInputHandle>(null);
+  const authRef = useRef<TagInputHandle>(null);
+
   const [stack, setStack] = useState<string[]>(["backend"]);
   const [keywords, setKeywords] = useState<string[]>(["Go", "Rust", "Kubernetes"]);
   const [remote, setRemote] = useState("remote");
@@ -119,12 +129,14 @@ export default function SubscribeForm() {
     const form = e.currentTarget;
     const email = (form.elements.namedItem("email") as HTMLInputElement).value;
     const location = (form.elements.namedItem("location") as HTMLInputElement).value;
+    const finalKeywords = keywordsRef.current?.getValueWithPending() ?? keywords;
+    const finalAuthCountries = authRef.current?.getValueWithPending() ?? authCountries;
 
     try {
       const res = await fetch("/api/subscribe", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, stack, keywords, remote, location, authCountries }),
+        body: JSON.stringify({ email, stack, keywords: finalKeywords, remote, location, authCountries: finalAuthCountries }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "subscription failed");
@@ -178,6 +190,7 @@ export default function SubscribeForm() {
         </div>
         <div style={{ marginTop: 10 }}>
           <TagInput
+            ref={keywordsRef}
             tags={keywords}
             onAdd={(v) => setKeywords((p) => [...p, v])}
             onRemove={(v) => setKeywords((p) => p.filter((k) => k !== v))}
@@ -232,6 +245,7 @@ export default function SubscribeForm() {
       <div className="field">
         <span className="label">authorized to work in</span>
         <TagInput
+          ref={authRef}
           tags={authCountries}
           onAdd={(v) => setAuthCountries((p) => [...p, v])}
           onRemove={(v) => setAuthCountries((p) => p.filter((c) => c !== v))}

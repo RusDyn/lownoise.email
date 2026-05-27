@@ -13,6 +13,7 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
+    color-scheme: dark;
     --bg: #0e0f0c;
     --bg-2: #16170f;
     --ink: #ebe7dc;
@@ -37,6 +38,7 @@ body {
 }
 
 body {
+  min-height: 100dvh;
   font-family: var(--mono);
   font-size: 14px;
   line-height: 1.65;
@@ -549,6 +551,9 @@ input[type="email"]:focus,
 .tag-pill button:hover {
   opacity: 1;
   background: color-mix(in oklab, var(--accent-ink) 18%, transparent);
+}
+.tag-pill button::before {
+  content: none;
 }
 .taginput-inner {
   flex: 1;

@@ -33,11 +33,10 @@ function welcomeHtml(b: SubscribeBody): string {
       : "";
 
   const prefs = [
-    row("stack", b.stack.join(", ")),
-    row("keywords", b.keywords.join(", ")),
+    row("keywords", [...b.stack, ...b.keywords].join(", ")),
     row("remote", remoteLabel[b.remote] ?? b.remote),
     row("location", b.location),
-    row("auth countries", b.authCountries.join(", ")),
+    row("auth_countries", b.authCountries.join(", ")),
   ]
     .filter(Boolean)
     .join("\n");
@@ -47,7 +46,7 @@ function welcomeHtml(b: SubscribeBody): string {
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>you're subscribed — loweffort.email</title>
+<title>you're subscribed — lownoise.email</title>
 </head>
 <body style="margin:0;padding:0;background:#f4f1ea;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:14px;line-height:1.65;color:#14140f">
   <table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f1ea;padding:40px 16px">
@@ -58,7 +57,7 @@ function welcomeHtml(b: SubscribeBody): string {
           <!-- header -->
           <tr>
             <td style="padding-bottom:24px">
-              <span style="font-weight:700;font-size:15px">loweffort<span style="color:#3d8a4e">.</span>email</span>
+              <span style="font-weight:700;font-size:15px">lownoise<span style="color:#3d8a4e">.</span>email</span>
             </td>
           </tr>
 
@@ -67,7 +66,7 @@ function welcomeHtml(b: SubscribeBody): string {
             <td style="background:#ece8df;border:1px solid #d8d3c6;border-radius:8px;overflow:hidden">
               <!-- chrome bar -->
               <div style="padding:10px 14px;border-bottom:1px solid #d8d3c6;font-size:11px;color:#7a7a6e">
-                ~/loweffort.email — bash
+                ~/lownoise.email — bash
               </div>
               <!-- body -->
               <div style="padding:22px">
@@ -101,8 +100,8 @@ function welcomeHtml(b: SubscribeBody): string {
           <!-- footer -->
           <tr>
             <td style="padding-top:24px;font-size:12px;color:#7a7a6e;border-top:1px solid #d8d3c6;margin-top:24px">
-              <span style="color:#14140f;font-weight:700">loweffort.email</span> · high-signal engineering jobs, low-effort search<br>
-              You're receiving this because you subscribed at loweffort.email.
+              <span style="color:#14140f;font-weight:700">lownoise.email</span> · high-signal engineering jobs, low-effort search<br>
+              You're receiving this because you subscribed at lownoise.email.
             </td>
           </tr>
 
@@ -155,8 +154,7 @@ export async function POST(req: Request) {
     email,
     unsubscribed: false,
     properties: {
-      stack: stack.join(","),
-      keywords: keywords.join(","),
+      keywords: [...stack, ...keywords].join(","),
       remote,
       location,
       auth_countries: authCountries.join(","),
@@ -169,11 +167,11 @@ export async function POST(req: Request) {
   }
 
   const { error: emailError } = await resend.emails.send({
-    from: "loweffort.email <jobs@loweffort.email>",
+    from: "lownoise.email <jobs@lownoise.email>",
     to: email,
     subject: "you're subscribed — first digest lands tomorrow",
     headers: {
-      "List-Unsubscribe": "<mailto:hi@loweffort.email?subject=unsubscribe>",
+      "List-Unsubscribe": "<mailto:hi@lownoise.email?subject=unsubscribe>",
       "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
     },
     html: welcomeHtml({ email, stack, keywords, remote, location, authCountries }),

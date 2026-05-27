@@ -6,7 +6,7 @@ export default function Home() {
       {/* ── top bar ── */}
       <div className="topbar">
         <div className="brand">
-          loweffort<span className="at">.</span>email
+          lownoise<span className="at">.</span>email
         </div>
         <div className="status">
           <span className="dot" />
@@ -22,7 +22,7 @@ export default function Home() {
             <span />
             <span />
           </div>
-          <div className="path">~/loweffort.email — bash</div>
+          <div className="path">~/lownoise.email — bash</div>
         </div>
         <div className="term-body">
           <div className="prompt">
@@ -114,7 +114,7 @@ export default function Home() {
           </div>
           <div className="good">
             <h3>
-              <span className="mark">✓</span> loweffort.email
+              <span className="mark">✓</span> lownoise.email
             </h3>
             <ul>
               <li>Remote-first eng roles</li>
@@ -136,7 +136,7 @@ export default function Home() {
         <div className="email" aria-label="sample email">
           <div className="email-head">
             <span>From</span>
-            <b>jobs@loweffort.email</b>
+            <b>jobs@lownoise.email</b>
             <span>Subj</span>
             <b>8 top matches for you · backend · remote (EU)</b>
             <span>Date</span>
@@ -287,14 +287,14 @@ export default function Home() {
 
       <footer>
         <div className="left">
-          <b>loweffort.email</b> · high-signal engineering jobs, low-effort
+          <b>lownoise.email</b> · high-signal engineering jobs, low-effort
           search
         </div>
         <div className="right">
           <a href="#subscribe">subscribe</a>
           <a href="/privacy">privacy</a>
           <a href="/terms">terms</a>
-          <a href="mailto:hi@loweffort.email">contact</a>
+          <a href="mailto:hi@lownoise.email">contact</a>
         </div>
       </footer>
     </main>

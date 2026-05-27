@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "Terms of Service — loweffort.email",
-  description: "Terms governing use of the loweffort.email job digest service.",
+  title: "Terms of Service — lownoise.email",
+  description: "Terms governing use of the lownoise.email job digest service.",
 };
 
 export default function TermsOfService() {
@@ -11,7 +11,7 @@ export default function TermsOfService() {
     <main className="wrap">
       <div className="topbar">
         <div className="brand">
-          loweffort<span className="at">.</span>email
+          lownoise<span className="at">.</span>email
         </div>
       </div>
 
@@ -25,7 +25,7 @@ export default function TermsOfService() {
 
         <h2>The service</h2>
         <p>
-          loweffort.email delivers a daily personalised engineering job digest to
+          lownoise.email delivers a daily personalised engineering job digest to
           your inbox. By subscribing you agree to these terms. If you do not agree,
           do not subscribe.
         </p>
@@ -82,7 +82,7 @@ export default function TermsOfService() {
         <h2>Unsubscribe and account deletion</h2>
         <p>
           You can unsubscribe at any time via the one-click link in any email or
-          by emailing <a href="mailto:hi@loweffort.email">hi@loweffort.email</a>.
+          by emailing <a href="mailto:hi@lownoise.email">hi@lownoise.email</a>.
           After unsubscribing, we will stop sending emails and delete your contact
           data within 30 days per our{" "}
           <Link href="/privacy">Privacy Policy</Link>.
@@ -105,7 +105,7 @@ export default function TermsOfService() {
 
         <h2>Limitation of liability</h2>
         <p>
-          To the maximum extent permitted by law, loweffort.email is not liable
+          To the maximum extent permitted by law, lownoise.email is not liable
           for any indirect, incidental, or consequential damages arising from your
           use of or inability to use the service, including but not limited to
           missed job opportunities.
@@ -122,14 +122,14 @@ export default function TermsOfService() {
         <h2>Governing law</h2>
         <p>
           These terms are governed by the laws of the jurisdiction in which
-          loweffort.email operates, without regard to conflict of law principles.
+          lownoise.email operates, without regard to conflict of law principles.
           GDPR rights are unaffected.
         </p>
 
         <h2>Contact</h2>
         <p>
           Questions:{" "}
-          <a href="mailto:hi@loweffort.email">hi@loweffort.email</a>
+          <a href="mailto:hi@lownoise.email">hi@lownoise.email</a>
         </p>
       </div>
     </main>

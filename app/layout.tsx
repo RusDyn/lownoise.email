@@ -9,20 +9,20 @@ const mono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "loweffort.email — high-signal engineering jobs",
+  title: "lownoise.email — high-signal engineering jobs",
   description:
     "One email a day, personalized for you. From ~12,000 fresh engineering roles we score every posting against your stack and ship the top 10 matches straight to your inbox.",
   openGraph: {
-    title: "loweffort.email — high-signal engineering jobs",
+    title: "lownoise.email — high-signal engineering jobs",
     description:
       "One email a day, personalized for you. From ~12,000 fresh engineering roles we score every posting against your stack and ship the top 10 matches straight to your inbox.",
-    url: "https://loweffort.email",
-    siteName: "loweffort.email",
+    url: "https://lownoise.email",
+    siteName: "lownoise.email",
     type: "website",
   },
   twitter: {
     card: "summary",
-    title: "loweffort.email — high-signal engineering jobs",
+    title: "lownoise.email — high-signal engineering jobs",
     description:
       "One email a day. Up to 10 hand-scored engineering roles matched to your stack, straight to your inbox.",
   },

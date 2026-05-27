@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "Privacy Policy — loweffort.email",
-  description: "How loweffort.email collects, uses, and protects your personal data.",
+  title: "Privacy Policy — lownoise.email",
+  description: "How lownoise.email collects, uses, and protects your personal data.",
 };
 
 export default function PrivacyPolicy() {
@@ -11,7 +11,7 @@ export default function PrivacyPolicy() {
     <main className="wrap">
       <div className="topbar">
         <div className="brand">
-          loweffort<span className="at">.</span>email
+          lownoise<span className="at">.</span>email
         </div>
       </div>
 
@@ -25,9 +25,9 @@ export default function PrivacyPolicy() {
 
         <h2>Who we are</h2>
         <p>
-          loweffort.email is a personalised engineering job digest service operated
-          at <strong>loweffort.email</strong>. You can reach us at{" "}
-          <a href="mailto:hi@loweffort.email">hi@loweffort.email</a>.
+          lownoise.email is a personalised engineering job digest service operated
+          at <strong>lownoise.email</strong>. You can reach us at{" "}
+          <a href="mailto:hi@lownoise.email">hi@lownoise.email</a>.
         </p>
         <p>
           We are the data controller for personal data you provide when subscribing.
@@ -112,7 +112,7 @@ export default function PrivacyPolicy() {
 
         <h2>Cookies and tracking</h2>
         <p>
-          loweffort.email does not use tracking cookies, analytics, or advertising
+          lownoise.email does not use tracking cookies, analytics, or advertising
           pixels. Fonts are self-hosted and no requests are made to Google or other
           third-party CDNs when you visit the site. We do not use any cookies
           beyond those strictly necessary for the site to function (none are set at
@@ -154,7 +154,7 @@ export default function PrivacyPolicy() {
         </ul>
         <p>
           To exercise any of these rights, email{" "}
-          <a href="mailto:hi@loweffort.email">hi@loweffort.email</a>. We will
+          <a href="mailto:hi@lownoise.email">hi@lownoise.email</a>. We will
           respond within 30 days.
         </p>
         <p>
@@ -180,7 +180,7 @@ export default function PrivacyPolicy() {
         <h2>Contact</h2>
         <p>
           Questions about this policy:{" "}
-          <a href="mailto:hi@loweffort.email">hi@loweffort.email</a>
+          <a href="mailto:hi@lownoise.email">hi@lownoise.email</a>
         </p>
       </div>
     </main>

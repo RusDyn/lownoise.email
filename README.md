@@ -1,36 +1,72 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# lownoise.email
 
-## Getting Started
+Daily personalized engineering job digest. Scrapes ~12,000 fresh roles from Ashby, Greenhouse, Lever, LinkedIn, and 130+ other ATS sources every hour, scores each posting against your stack and preferences, and delivers up to 10 top matches to your inbox once a day — no dashboard, no Easy Apply noise, no ghost jobs.
 
-First, run the development server:
+## How it works
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+```
+scrape (Serper + Apify)
+  → dedup + filter (Upstash Redis)
+    → enrich page content (Firecrawl)
+      → structure + score (DeepSeek)
+        → store (Upstash Redis)
+          → broadcast digest (Resend)
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Inngest orchestrates the pipeline with hourly scrape jobs and a daily digest send. Jobs run in batches of 5 with step memoization so failed runs replay safely without re-processing completed work.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Stack
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- **Next.js 16** — landing page + API routes
+- **Inngest** — job scheduling and pipeline orchestration
+- **Upstash Redis** — job storage and URL deduplication
+- **Resend** — email broadcast and audience management
+- **Serper** — Google search-based job discovery
+- **Apify** — LinkedIn jobs actor
+- **Firecrawl** — job page content extraction
+- **DeepSeek** — LLM structuring of raw job content
 
-## Learn More
+## Local development
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+npm install
+cp .env.local.example .env.local  # fill in the variables below
+npm run dev
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+The app runs at `http://localhost:3000`. The Inngest dev server must be running separately to trigger background jobs — see [Inngest local dev](https://www.inngest.com/docs/local-development).
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Environment variables
 
-## Deploy on Vercel
+Create a `.env.local` file with the following:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```env
+# Resend (email delivery)
+RESEND_API_KEY=
+RESEND_SEGMENT_ID=        # segment ID from Resend dashboard → Segments
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+# Inngest (job orchestration)
+INNGEST_EVENT_KEY=
+INNGEST_SIGNING_KEY=
+
+# Scraping
+SERPER_API_KEY=            # google.serper.dev
+FIRECRAWL_API_KEY=         # firecrawl.dev
+APIFY_API_KEY=             # apify.com — LinkedIn jobs actor
+
+# LLM structuring
+DEEPSEEK_API_KEY=          # platform.deepseek.com
+
+# Upstash Redis (job storage + dedup)
+UPSTASH_REDIS_REST_URL=
+UPSTASH_REDIS_REST_TOKEN=
+```
+
+## Scripts
+
+```bash
+npm run dev      # start Next.js dev server
+npm run build    # production build
+npm run start    # start production server
+npm run lint     # run ESLint
+```

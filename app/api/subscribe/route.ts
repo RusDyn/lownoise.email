@@ -142,13 +142,13 @@ export async function POST(req: Request) {
     return Response.json({ error: "invalid field values" }, { status: 400 });
   }
 
-  const audienceId = process.env.RESEND_AUDIENCE_ID;
-  if (!audienceId) {
-    return Response.json({ error: "audience not configured" }, { status: 500 });
+  const segmentId = process.env.RESEND_SEGMENT_ID;
+  if (!segmentId) {
+    return Response.json({ error: "segment not configured" }, { status: 500 });
   }
 
   const { error: contactError } = await resend.contacts.create({
-    audienceId,
+    segments: [{ id: segmentId }],
     email,
     unsubscribed: false,
     properties: {

@@ -17,26 +17,30 @@ export const sendDigest = inngest.createFunction(
     // Fetch all contacts + their custom properties (list gives basic fields, get gives properties)
     const subscribers = await step.run("list-contacts", async () => {
       const resend = new Resend(process.env.RESEND_API_KEY);
-      const audienceId = process.env.RESEND_AUDIENCE_ID!;
+      const segmentId = process.env.RESEND_SEGMENT_ID;
+      if (!segmentId) throw new Error("RESEND_SEGMENT_ID is not configured");
 
       const all: Subscriber[] = [];
       let after: string | undefined;
 
       while (true) {
         const { data, error } = await resend.contacts.list({
-          audienceId,
+          segmentId,
           limit: 100,
           ...(after ? { after } : {}),
         });
 
-        if (error || !data) break;
+        if (error || !data) {
+          console.error("resend contacts.list error", error);
+          break;
+        }
 
         const active = data.data.filter((c) => !c.unsubscribed);
 
         // contacts.list omits custom properties — fetch each contact individually
         const detailed = await Promise.all(
           active.map(async (c) => {
-            const { data: detail } = await resend.contacts.get({ audienceId, id: c.id });
+            const { data: detail } = await resend.contacts.get(c.id);
             if (!detail) return null;
 
             const props = (detail.properties ?? {}) as unknown as Record<string, string>;
@@ -69,7 +73,6 @@ export const sendDigest = inngest.createFunction(
     // Score jobs per subscriber and update their Resend contact properties
     await step.run("process-contacts", async () => {
       const resend = new Resend(process.env.RESEND_API_KEY);
-      const audienceId = process.env.RESEND_AUDIENCE_ID!;
 
       const batchSize = 10;
       for (let i = 0; i < subscribers.length; i += batchSize) {
@@ -85,7 +88,6 @@ export const sendDigest = inngest.createFunction(
 
             await resend.contacts.update({
               id: sub.id,
-              audienceId,
               properties: {
                 jobs_count: String(ranked.length),
                 jobs: jobsHtml,
@@ -99,9 +101,11 @@ export const sendDigest = inngest.createFunction(
     // Create broadcast and send immediately; Resend substitutes {{{contact.jobs}}} per recipient
     await step.run("send-broadcast", async () => {
       const resend = new Resend(process.env.RESEND_API_KEY);
+      const segmentId = process.env.RESEND_SEGMENT_ID;
+      if (!segmentId) throw new Error("RESEND_SEGMENT_ID is not configured");
 
       await resend.broadcasts.create({
-        segmentId: process.env.RESEND_SEGMENT_ID!,
+        segmentId,
         from: "Alex <dyn@lownoise.email>",
         subject: "{{{contact.jobs_count}}} fresh remote backend/platform jobs",
         html: buildBroadcastHtml(),

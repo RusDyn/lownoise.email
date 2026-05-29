@@ -17,8 +17,14 @@ export default async function proxy(request: NextRequest) {
   });
 
   const key = `rate:subscribe:${ip}`;
-  const count = await redis.incr(key);
-  if (count === 1) await redis.expire(key, WINDOW_S);
+  // Atomic INCR + EXPIRE-if-new: redis.eval runs a Lua script server-side,
+  // preventing the key from becoming permanent if the process dies between two commands
+  const luaScript = [
+    "local c = redis.call('INCR', KEYS[1])",
+    "if c == 1 then redis.call('EXPIRE', KEYS[1], ARGV[1]) end",
+    "return c",
+  ].join("\n");
+  const count = (await redis.eval(luaScript, [key], [String(WINDOW_S)])) as number;
 
   if (count > MAX_REQUESTS) {
     return new NextResponse("Too Many Requests", {

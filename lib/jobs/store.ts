@@ -21,8 +21,8 @@ function urlHash(url: string): string {
 }
 
 export async function isKnownUrl(url: string): Promise<boolean> {
-  const result = await getRedis().sismember("jobs:urls", url);
-  return result === 1;
+  const result = await getRedis().zscore("jobs:urls", url);
+  return result !== null;
 }
 
 export async function storeJob(job: StructuredJob, markdown: string): Promise<void> {
@@ -32,7 +32,7 @@ export async function storeJob(job: StructuredJob, markdown: string): Promise<vo
     redis.set(`job:${hash}`, JSON.stringify(job), { ex: TTL_SECONDS }),
     redis.set(`job:${hash}:raw`, markdown, { ex: TTL_SECONDS }),
     redis.zadd("jobs:index", { score: job.scrapedAt, member: hash }),
-    redis.sadd("jobs:urls", job.url),
+    redis.zadd("jobs:urls", { score: job.scrapedAt, member: job.url }),
   ]);
 }
 
@@ -40,7 +40,10 @@ export async function getJobsSince(sinceMs: number): Promise<StructuredJob[]> {
   const redis = getRedis();
   // Prune entries older than 7 days to prevent unbounded growth
   const cutoff = Date.now() - SEVEN_DAYS_MS;
-  await redis.zremrangebyscore("jobs:index", 0, cutoff);
+  await Promise.all([
+    redis.zremrangebyscore("jobs:index", 0, cutoff),
+    redis.zremrangebyscore("jobs:urls", 0, cutoff),
+  ]);
 
   const hashes = await redis.zrange("jobs:index", sinceMs, "+inf", { byScore: true });
   if (!hashes.length) return [];

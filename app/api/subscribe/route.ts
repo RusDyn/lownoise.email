@@ -1,4 +1,5 @@
 import { Resend } from "resend";
+import { escHtml } from "@/lib/html";
 
 export const runtime = "edge";
 
@@ -13,9 +14,6 @@ interface SubscribeBody {
   authCountries: string[];
 }
 
-function escHtml(s: string): string {
-  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-}
 
 function welcomeHtml(b: SubscribeBody): string {
   const remoteLabel: Record<string, string> = {

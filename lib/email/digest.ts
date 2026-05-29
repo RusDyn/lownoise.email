@@ -1,8 +1,5 @@
+import { escHtml as esc } from "../html";
 import type { StructuredJob } from "../jobs/types";
-
-function esc(s: string): string {
-  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-}
 
 export function formatJobHtml(job: StructuredJob, index: number): string {
   const location = [job.city, job.country].filter(Boolean).map(esc).join(" • ");

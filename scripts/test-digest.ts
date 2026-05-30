@@ -1,7 +1,7 @@
 import { Resend } from "resend";
 import { getJobsSince } from "@/lib/jobs/store";
 import { filterAndRankJobs } from "@/lib/jobs/score";
-import { formatJobHtml, buildBroadcastHtml } from "@/lib/email/digest";
+import { formatJobHtml, buildBroadcastHtml, JOB_DIVIDER_HTML } from "@/lib/email/digest";
 import type { Subscriber } from "@/lib/jobs/types";
 
 async function main() {
@@ -66,7 +66,7 @@ async function main() {
         const ranked = filterAndRankJobs(jobs, sub);
         const jobsHtml =
           ranked.length > 0
-            ? ranked.map((j, idx) => formatJobHtml(j, idx + 1)).join("<br /><br />")
+            ? ranked.map((j, idx) => formatJobHtml(j, idx + 1)).join(JOB_DIVIDER_HTML)
             : "No new matches today — check back tomorrow.";
         await resend.contacts.update({
           id: sub.id,

@@ -52,6 +52,6 @@ export async function getJobsSince(sinceMs: number): Promise<StructuredJob[]> {
   const values = await redis.mget<(string | null)[]>(...keys);
 
   return values
-    .filter((v): v is StructuredJob => v !== null)
+    .filter((v): v is string => v !== null)
     .map((v) => (typeof v === "string" ? JSON.parse(v) : v) as StructuredJob);
 }

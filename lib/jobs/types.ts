@@ -19,6 +19,7 @@ export interface StructuredJob {
   isRemoteFriendly: boolean;
   equityOffered: boolean;
   scrapedAt: number;
+  datePosted?: number;
   source: "ashby" | "linkedin" | "other";
   body: string;
 }

@@ -80,44 +80,34 @@ export async function scrapeApify(): Promise<RawJob[]> {
   const actorId = "hKByXkMQaC5Qt9UMN";
   const endpoint = `https://api.apify.com/v2/acts/${actorId}/run-sync-get-dataset-items?token=${token}&timeout=300&memory=512`;
 
-  const geoIds = [
-    "103644278", // US
-    "91000007",  // EMEA
-  ];
+  let items: ApifyLinkedInItem[] = [];
+  try {
+    const res = await fetch(endpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        urls: [
+          "https://www.linkedin.com/jobs/search/?keywords=engineer&geoId=103644278&f_WT=2&f_TPR=r3600&position=1&pageNum=0",
+          "https://www.linkedin.com/jobs/search/?keywords=engineer&geoId=91000007&f_WT=2&f_TPR=r3600&position=1&pageNum=0",
+        ],
+        count: 200,
+        scrapeCompany: false,
+        splitByLocation: false,
+      }),
+      signal: AbortSignal.timeout(320_000),
+    });
 
-  const results = await Promise.all(
-    geoIds.map(async (geoId) => {
-      try {
-        const res = await fetch(endpoint, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            queries: "engineer",
-            geoId,
-            count: "200",
-            f_WT: "2",
-            f_TPR: "r3600",
-            maxRows: 200,
-          }),
-          signal: AbortSignal.timeout(320_000),
-        });
-
-        if (!res.ok) {
-          console.error(`Apify geoId=${geoId} failed: ${res.status}`);
-          return [] as ApifyLinkedInItem[];
-        }
-
-        return (await res.json()) as ApifyLinkedInItem[];
-      } catch (err) {
-        console.error(`Apify geoId=${geoId} error:`, err);
-        return [] as ApifyLinkedInItem[];
-      }
-    })
-  );
+    if (!res.ok) {
+      console.error(`Apify failed: ${res.status}`);
+    } else {
+      items = (await res.json()) as ApifyLinkedInItem[];
+    }
+  } catch (err) {
+    console.error("Apify error:", err);
+  }
 
   const jobs: RawJob[] = [];
-  for (const items of results) {
-    for (const item of items) {
+  for (const item of items) {
       if (item.applyMethod !== "OffsiteApply") continue;
       if (!item.workRemoteAllowed) continue;
       if ((item.applicantsCount ?? 0) >= 100) continue;
@@ -138,7 +128,6 @@ export async function scrapeApify(): Promise<RawJob[]> {
         },
         source: "linkedin",
       });
-    }
   }
 
   return jobs;

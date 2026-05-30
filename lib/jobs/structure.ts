@@ -8,6 +8,35 @@ function getClient() {
   });
 }
 
+export function parseDatePosted(date: string | undefined, source: string, now = Date.now()): number | undefined {
+  if (!date) return undefined;
+
+  if (source === "linkedin") {
+    const ms = new Date(date).getTime();
+    if (!isNaN(ms)) return ms;
+    // fall through to relative-string parser for "3 days ago" etc.
+  }
+
+  const lower = date.trim().toLowerCase();
+  if (lower === "just now" || lower === "today") return now;
+  if (lower === "yesterday") return now - 86_400_000;
+
+  // handles "2 hours ago", "an hour ago", "a day ago"
+  const normalized = date.trim().replace(/^an?\s+/i, "1 ");
+  const m = normalized.match(/^(\d+)\s+(second|minute|hour|day|week|month)s?\s+ago$/i);
+  if (m) {
+    const n = parseInt(m[1], 10);
+    const offsets: Record<string, number> = {
+      second: 1_000, minute: 60_000, hour: 3_600_000,
+      day: 86_400_000, week: 604_800_000, month: 2_592_000_000,
+    };
+    return now - n * (offsets[m[2].toLowerCase()] ?? 0);
+  }
+
+  const ms = new Date(date).getTime();
+  return isNaN(ms) ? undefined : ms;
+}
+
 const SCHEMA = `Return JSON with these fields:
 title, company, city, country,
 workMode ("remote"|"onsite"|"hybrid"),
@@ -53,6 +82,7 @@ export async function structureJob(raw: RawJob, markdown: string): Promise<Struc
       return null;
     }
 
+    const now = Date.now();
     return {
       url: raw.url,
       title: parsed.title,
@@ -73,7 +103,8 @@ export async function structureJob(raw: RawJob, markdown: string): Promise<Struc
       skills: Array.isArray(parsed.skills) ? parsed.skills.slice(0, 10) : [],
       isRemoteFriendly: parsed.isRemoteFriendly ?? false,
       equityOffered: parsed.equityOffered ?? false,
-      scrapedAt: Date.now(),
+      scrapedAt: now,
+      datePosted: parseDatePosted(raw.date, raw.source, now),
       source: raw.source,
       body: markdown.slice(0, 8000),
     };

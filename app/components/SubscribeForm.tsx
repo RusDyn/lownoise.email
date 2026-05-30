@@ -16,7 +16,30 @@ const STACK_OPTIONS = [
 ];
 
 const KEYWORD_SUGGESTIONS = ["Python", "TypeScript", "PostgreSQL", "PyTorch", "Terraform", "React"];
-const AUTH_SUGGESTIONS = ["UK", "CA", "EU", "IN", "UA"];
+const AUTH_SUGGESTIONS = ["US", "UK", "CA", "DE", "PT", "FR", "NL", "PL", "UA", "IE", "SE", "AU", "IN", "SG", "BR"];
+
+const AUTH_COUNTRY_LIST: [string, string][] = [
+  ["US", "United States"],
+  ["UK", "United Kingdom"],
+  ["CA", "Canada"],
+  ["DE", "Germany"],
+  ["PT", "Portugal"],
+  ["FR", "France"],
+  ["NL", "Netherlands"],
+  ["ES", "Spain"],
+  ["PL", "Poland"],
+  ["UA", "Ukraine"],
+  ["IE", "Ireland"],
+  ["SE", "Sweden"],
+  ["CH", "Switzerland"],
+  ["AU", "Australia"],
+  ["IN", "India"],
+  ["SG", "Singapore"],
+  ["BR", "Brazil"],
+  ["JP", "Japan"],
+  ["MX", "Mexico"],
+  ["EU", "EU (any member state)"],
+];
 
 const TagInput = forwardRef<TagInputHandle, {
   tags: string[];
@@ -25,7 +48,8 @@ const TagInput = forwardRef<TagInputHandle, {
   placeholder: string;
   suggestions: string[];
   maxTags?: number;
-}>(function TagInput({ tags, onAdd, onRemove, placeholder, suggestions, maxTags = 12 }, ref) {
+  inputListId?: string;
+}>(function TagInput({ tags, onAdd, onRemove, placeholder, suggestions, maxTags = 12, inputListId }, ref) {
   const inputRef = useRef<HTMLInputElement>(null);
 
   function commit(raw: string) {
@@ -87,6 +111,7 @@ const TagInput = forwardRef<TagInputHandle, {
           placeholder={tags.length === 0 ? placeholder : ""}
           onKeyDown={handleKey}
           onBlur={handleBlur}
+          list={inputListId}
         />
       </div>
       {unusedSuggestions.length > 0 && (
@@ -255,9 +280,15 @@ export default function SubscribeForm() {
           tags={authCountries}
           onAdd={(v) => setAuthCountries((p) => [...p, v])}
           onRemove={(v) => setAuthCountries((p) => p.filter((c) => c !== v))}
-          placeholder="add ISO code — US, DE, PT…"
+          placeholder="pick a country or type a code…"
           suggestions={AUTH_SUGGESTIONS}
+          inputListId="auth-country-list"
         />
+        <datalist id="auth-country-list">
+          {AUTH_COUNTRY_LIST.map(([code, name]) => (
+            <option key={code} value={code}>{name}</option>
+          ))}
+        </datalist>
         <div className="helper">We hide roles whose visa policy doesn&apos;t match.</div>
       </div>
 

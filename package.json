@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test:digest": "node --env-file=.env.local node_modules/.bin/tsx scripts/test-digest.ts"
   },
   "dependencies": {
     "@upstash/redis": "^1.38.0",
@@ -23,6 +24,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.2.6",
+    "tsx": "^4.22.3",
     "typescript": "^5"
   }
 }

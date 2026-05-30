@@ -106,10 +106,10 @@ export default function SubscribeForm() {
   const keywordsRef = useRef<TagInputHandle>(null);
   const authRef = useRef<TagInputHandle>(null);
 
-  const [stack, setStack] = useState<string[]>(["backend"]);
-  const [keywords, setKeywords] = useState<string[]>(["Go", "Rust", "Kubernetes"]);
+  const [stack, setStack] = useState<string[]>([]);
+  const [keywords, setKeywords] = useState<string[]>([]);
   const [remote, setRemote] = useState("remote");
-  const [authCountries, setAuthCountries] = useState<string[]>(["US", "PT", "DE"]);
+  const [authCountries, setAuthCountries] = useState<string[]>([]);
   const [consented, setConsented] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -131,6 +131,12 @@ export default function SubscribeForm() {
     const location = (form.elements.namedItem("location") as HTMLInputElement).value;
     const finalKeywords = keywordsRef.current?.getValueWithPending() ?? keywords;
     const finalAuthCountries = authRef.current?.getValueWithPending() ?? authCountries;
+
+    if (finalAuthCountries.length === 0) {
+      setError("add at least one country you're authorized to work in");
+      setSubmitting(false);
+      return;
+    }
 
     try {
       const res = await fetch("/api/subscribe", {

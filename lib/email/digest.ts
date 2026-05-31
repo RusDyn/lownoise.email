@@ -93,7 +93,8 @@ export function buildBroadcastHtml(): string {
           <tr>
             <td style="padding-top:24px;font-size:12px;color:#7a7a6e;border-top:1px solid #d8d3c6;margin-top:24px">
               <span style="color:#14140f;font-weight:700">lownoise.email</span> · high-signal engineering jobs, low-effort search<br>
-              <a href="{{{RESEND_UNSUBSCRIBE_URL}}}" style="color:#7a7a6e">Unsubscribe</a>
+              <a href="{{{contact.manage_url}}}" style="color:#7a7a6e">manage preferences</a> ·
+              <a href="{{{RESEND_UNSUBSCRIBE_URL}}}" style="color:#7a7a6e">unsubscribe</a>
             </td>
           </tr>
 

@@ -40,5 +40,5 @@ export default async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: "/api/subscribe",
+  matcher: ["/api/subscribe", "/api/verify-email"],
 };

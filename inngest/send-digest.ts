@@ -3,7 +3,10 @@ import { inngest } from "@/lib/inngest";
 import { getJobsSince } from "@/lib/jobs/store";
 import { filterAndRankJobs } from "@/lib/jobs/score";
 import { formatJobHtml, buildBroadcastHtml, JOB_DIVIDER_HTML } from "@/lib/email/digest";
+import { createManageToken } from "@/lib/auth";
 import type { Subscriber } from "@/lib/jobs/types";
+
+const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL ?? "https://lownoise.email";
 
 export const sendDigest = inngest.createFunction(
   { id: "send-digest", name: "Send Daily Digest", triggers: [{ cron: "0 16 * * *" }] }, // 4 PM UTC = 8 AM PT
@@ -86,11 +89,15 @@ export const sendDigest = inngest.createFunction(
                 ? ranked.map((j, idx) => formatJobHtml(j, idx + 1)).join(JOB_DIVIDER_HTML)
                 : "No new matches today — check back tomorrow.";
 
+            const manageToken = await createManageToken(sub.email);
+            const manageUrl = `${BASE_URL}/manage?token=${encodeURIComponent(manageToken)}`;
+
             await resend.contacts.update({
               id: sub.id,
               properties: {
                 jobs_count: String(ranked.length),
                 jobs: jobsHtml,
+                manage_url: manageUrl,
               },
             });
           })

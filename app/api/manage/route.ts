@@ -12,6 +12,7 @@ interface ManageBody {
   keywords: string[];
   remote: string;
   location: string;
+  timezone: string;
   authCountries: string[];
 }
 
@@ -40,7 +41,7 @@ export async function POST(req: Request) {
     return Response.json({ error: "invalid request body" }, { status: 400 });
   }
 
-  const { token, stack = [], keywords = [], remote = "", location = "", authCountries = [] } = body;
+  const { token, stack = [], keywords = [], remote = "", location = "", timezone = "", authCountries = [] } = body;
 
   if (!token) {
     return Response.json({ error: "missing token" }, { status: 400 });
@@ -61,6 +62,7 @@ export async function POST(req: Request) {
 
   if (
     typeof location !== "string" || location.length > 200 ||
+    typeof timezone !== "string" || timezone.length > 20 ||
     typeof remote !== "string" || !["remote", "hybrid", "onsite"].includes(remote) ||
     stack.some((s) => typeof s !== "string" || s.length > 100) ||
     keywords.some((k) => typeof k !== "string" || k.length > 100) ||
@@ -78,6 +80,7 @@ export async function POST(req: Request) {
     keywords: [...stack, ...keywords].join(","),
     remote,
     location,
+    timezone,
     auth_countries: authCountries.join(","),
   };
 

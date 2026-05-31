@@ -11,7 +11,9 @@
   },
   "dependencies": {
     "@upstash/redis": "^1.38.0",
+    "countries-and-timezones": "^3.9.0",
     "inngest": "^4.5.0",
+    "is-european": "^1.0.10",
     "next": "16.2.6",
     "openai": "^6.39.1",
     "react": "19.2.4",

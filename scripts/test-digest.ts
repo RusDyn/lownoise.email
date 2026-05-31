@@ -44,6 +44,7 @@ async function main() {
           keywords: kwStr.split(",").map((k) => k.trim().toLowerCase()).filter(Boolean),
           remote: (props["remote"] ?? "").toLowerCase(),
           location: (props["location"] ?? "").toLowerCase(),
+          timezone: (props["timezone"] ?? "").toUpperCase(),
           authCountries: authStr.split(",").map((s) => s.trim().toUpperCase()).filter(Boolean),
           hasUSVisa: authStr.toUpperCase().includes("US"),
         } satisfies Subscriber;

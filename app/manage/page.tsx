@@ -37,6 +37,7 @@ async function fetchContactPrefs(email: string): Promise<InitialPrefs | null> {
         keywords: allKeywords.filter((k) => !STACK_VALUES.has(k)),
         remote: props.remote ?? "remote",
         location: props.location ?? "",
+        timezone: props.timezone ?? "",
         authCountries: (props.auth_countries ?? "")
           .split(",")
           .map((c) => c.trim().toUpperCase())

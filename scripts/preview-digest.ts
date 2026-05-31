@@ -14,6 +14,7 @@ const PREVIEW_SUB: Subscriber = {
   keywords: ["backend", "platform", "go", "typescript"],
   remote: "remote",
   location: "",
+  timezone: "",
   authCountries: [],
   hasUSVisa: false,
 };

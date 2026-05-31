@@ -15,6 +15,7 @@ export interface InitialPrefs {
   keywords: string[];
   remote: string;
   location: string;
+  timezone: string;
   authCountries: string[];
 }
 
@@ -32,6 +33,7 @@ export default function ManageForm({ token, isNew, initialPrefs }: ManageFormPro
   const [keywords, setKeywords] = useState<string[]>(initialPrefs?.keywords ?? []);
   const [remote, setRemote] = useState(initialPrefs?.remote ?? "remote");
   const [authCountries, setAuthCountries] = useState<string[]>(initialPrefs?.authCountries ?? []);
+  const [timezone, setTimezone] = useState(initialPrefs?.timezone ?? "");
   const [submitting, setSubmitting] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -68,6 +70,7 @@ export default function ManageForm({ token, isNew, initialPrefs }: ManageFormPro
           keywords: finalKeywords,
           remote,
           location,
+          timezone,
           authCountries: finalAuthCountries,
         }),
       });
@@ -175,6 +178,28 @@ export default function ManageForm({ token, isNew, initialPrefs }: ManageFormPro
             Used to match hybrid &amp; onsite roles in your country, and country-locked
             &ldquo;remote&rdquo; listings.
           </div>
+        </div>
+
+        <div className="field">
+          <label className="label" htmlFor="timezone">
+            your timezone <span style={{ fontWeight: 400, opacity: 0.6 }}>(optional)</span>
+          </label>
+          <input
+            id="timezone"
+            type="text"
+            name="timezone"
+            list="tz-list"
+            placeholder="e.g. GMT+1"
+            autoComplete="off"
+            value={timezone}
+            onChange={(e) => setTimezone(e.target.value)}
+          />
+          <datalist id="tz-list">
+            {["UTC","GMT-8","GMT-7","GMT-6","GMT-5","GMT-4","GMT-3","GMT+1","GMT+2","GMT+3","GMT+4","GMT+5","GMT+5:30","GMT+6","GMT+7","GMT+8","GMT+9","GMT+10","GMT+12"].map((tz) => (
+              <option key={tz} value={tz} />
+            ))}
+          </datalist>
+          <div className="helper">Used to personalize digest timing in future.</div>
         </div>
 
         <div className="field">

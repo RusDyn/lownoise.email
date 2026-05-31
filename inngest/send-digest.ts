@@ -4,6 +4,7 @@ import { getJobsSince } from "@/lib/jobs/store";
 import { filterAndRankJobs } from "@/lib/jobs/score";
 import { formatJobHtml, buildBroadcastHtml, JOB_DIVIDER_HTML } from "@/lib/email/digest";
 import { createManageToken } from "@/lib/auth";
+import { stripTimezone, extractTimezone } from "@/lib/jobs/normalize";
 import type { Subscriber } from "@/lib/jobs/types";
 
 const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL ?? "https://lownoise.email";
@@ -52,12 +53,15 @@ export const sendDigest = inngest.createFunction(
 
             const remoteStr = props["remote"] != null ? String(props["remote"]) : "";
             const locationStr = props["location"] != null ? String(props["location"]) : "";
+            const rawLocation = locationStr.toLowerCase();
+            const tzProp = props["timezone"] != null ? String(props["timezone"]) : "";
             return {
               id: c.id,
               email: c.email,
               keywords: kwStr.split(",").map((k) => k.trim().toLowerCase()).filter(Boolean),
               remote: remoteStr.toLowerCase(),
-              location: locationStr.toLowerCase(),
+              location: stripTimezone(rawLocation),
+              timezone: tzProp.toUpperCase() || extractTimezone(rawLocation),
               authCountries: authStr.split(",").map((s) => s.trim().toUpperCase()).filter(Boolean),
               hasUSVisa: authStr.toUpperCase().includes("US"),
             } satisfies Subscriber;
@@ -89,7 +93,7 @@ export const sendDigest = inngest.createFunction(
             const jobsHtml =
               ranked.length > 0
                 ? ranked.map((j, idx) => formatJobHtml(j, idx + 1)).join(JOB_DIVIDER_HTML)
-                : "No new matches today — check back tomorrow.";
+                : `<span style="color:#7a7a6e;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:13px">your matches are empty today — check back tomorrow.</span>`;
 
             const manageToken = await createManageToken(sub.email);
             const manageUrl = `${BASE_URL}/manage?token=${encodeURIComponent(manageToken)}`;
@@ -97,7 +101,7 @@ export const sendDigest = inngest.createFunction(
             const { error } = await resend.contacts.update({
               id: sub.id,
               properties: {
-                jobs_count: String(ranked.length),
+                jobs_count: ranked.length === 0 ? "No" : String(ranked.length),
                 jobs: jobsHtml,
                 manage_url: manageUrl,
               },

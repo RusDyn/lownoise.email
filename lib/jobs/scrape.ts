@@ -30,6 +30,14 @@ function cleanUrl(url: string): string {
   }
 }
 
+// Strip ATS apply-form suffixes so we scrape the job listing, not the form page.
+// Form pages return near-empty markdown because form/input tags are excluded.
+export function normalizeJobUrl(url: string): string {
+  return url
+    .replace(/\/application\/?$/, "")   // Ashby: /{org}/{uuid}/application
+    .replace(/\/apply\/?$/, "");         // Greenhouse, Lever: /jobs/{id}/apply
+}
+
 export async function scrapeSerper(): Promise<RawJob[]> {
   const apiKey = process.env.SERPER_API_KEY!;
   const maxPages = 5;
@@ -57,7 +65,7 @@ export async function scrapeSerper(): Promise<RawJob[]> {
     const organic = data.organic ?? [];
 
     for (const item of organic) {
-      const url = cleanUrl(item.link);
+      const url = normalizeJobUrl(cleanUrl(item.link));
       if (!url) continue;
       jobs.push({
         title: item.title.replace(/ - Jobs$/, "").trim(),
@@ -112,7 +120,7 @@ export async function scrapeApify(): Promise<RawJob[]> {
       if (!item.workRemoteAllowed) continue;
       if ((item.applicantsCount ?? 0) >= 100) continue;
 
-      const url = cleanUrl(item.applyUrl ?? "");
+      const url = normalizeJobUrl(cleanUrl(item.applyUrl ?? ""));
       if (!url) continue;
 
       jobs.push({

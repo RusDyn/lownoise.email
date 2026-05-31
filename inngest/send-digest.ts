@@ -46,16 +46,18 @@ export const sendDigest = inngest.createFunction(
             const { data: detail } = await resend.contacts.get(c.id);
             if (!detail) return null;
 
-            const props = (detail.properties ?? {}) as unknown as Record<string, string>;
-            const kwStr = props["keywords"] ?? "";
-            const authStr = props["auth_countries"] ?? "";
+            const props = (detail.properties ?? {}) as unknown as Record<string, unknown>;
+            const kwStr = props["keywords"] != null ? String(props["keywords"]) : "";
+            const authStr = props["auth_countries"] != null ? String(props["auth_countries"]) : "";
 
+            const remoteStr = props["remote"] != null ? String(props["remote"]) : "";
+            const locationStr = props["location"] != null ? String(props["location"]) : "";
             return {
               id: c.id,
               email: c.email,
               keywords: kwStr.split(",").map((k) => k.trim().toLowerCase()).filter(Boolean),
-              remote: (props["remote"] ?? "").toLowerCase(),
-              location: (props["location"] ?? "").toLowerCase(),
+              remote: remoteStr.toLowerCase(),
+              location: locationStr.toLowerCase(),
               authCountries: authStr.split(",").map((s) => s.trim().toUpperCase()).filter(Boolean),
               hasUSVisa: authStr.toUpperCase().includes("US"),
             } satisfies Subscriber;

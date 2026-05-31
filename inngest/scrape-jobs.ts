@@ -1,5 +1,5 @@
 import { inngest } from "@/lib/inngest";
-import { scrapeSerper, scrapeApify, scrapeJobPage } from "@/lib/jobs/scrape";
+import { scrapeSerper, scrapeApify, scrapeJobPage, normalizeJobUrl } from "@/lib/jobs/scrape";
 import { structureJob } from "@/lib/jobs/structure";
 import { isKnownUrl, storeJob } from "@/lib/jobs/store";
 import type { RawJob } from "@/lib/jobs/types";
@@ -15,7 +15,10 @@ export const scrapeJobs = inngest.createFunction(
 
     // Step 2: Merge, deduplicate by URL, filter already-known
     const newJobs = (await step.run("dedup-filter", async (): Promise<RawJob[]> => {
-      const merged = [...scraped.serper, ...scraped.apify];
+      const merged = [...scraped.serper, ...scraped.apify].map((j) => ({
+        ...j,
+        url: normalizeJobUrl(j.url),
+      }));
       const seen = new Set<string>();
       const deduped = merged.filter((j) => {
         if (!j.url || seen.has(j.url)) return false;

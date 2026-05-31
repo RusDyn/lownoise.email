@@ -1,5 +1,5 @@
 import type { StructuredJob, Subscriber } from "./types";
-import { expandAuthCountries } from "./normalize";
+import { expandAuthCountries, normalizeCode } from "./normalize";
 
 export function scoreJob(job: StructuredJob, subscriber: Subscriber): number {
   let score = 0;
@@ -50,7 +50,7 @@ export function filterAndRankJobs(jobs: StructuredJob[], subscriber: Subscriber)
       if (
         job.locationRestriction.length > 0 &&
         authCodes.length > 0 &&
-        !job.locationRestriction.some((c) => authCodes.includes(c))
+        !job.locationRestriction.some((c) => authCodes.includes(normalizeCode(c)))
       ) return false;
       return true;
     })

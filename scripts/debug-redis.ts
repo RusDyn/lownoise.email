@@ -1,4 +1,5 @@
 import { getJobsSince } from "../lib/jobs/store";
+import { expandAuthCountries } from "../lib/jobs/normalize";
 import type { StructuredJob, Subscriber } from "../lib/jobs/types";
 
 // ── Test subscribers matching the 4 reported cases ──────────────────────────
@@ -62,12 +63,13 @@ const TEST_CASES: Array<{ label: string; sub: Subscriber }> = [
 function hardFilterReason(job: StructuredJob, sub: Subscriber): string | null {
   if (job.visaRequirement === "US" && !sub.hasUSVisa) return "US visa required";
   if (sub.remote === "remote" && !job.isRemoteFriendly) return "not remote-friendly";
+  const expanded = expandAuthCountries(sub.authCountries);
   if (
     job.locationRestriction.length > 0 &&
-    sub.authCountries.length > 0 &&
-    !job.locationRestriction.some((c) => sub.authCountries.includes(c))
+    expanded.length > 0 &&
+    !job.locationRestriction.some((c) => expanded.includes(c))
   ) {
-    return `locationRestriction mismatch: job=[${job.locationRestriction.join(",")}] sub=[${sub.authCountries.join(",")}]`;
+    return `locationRestriction mismatch: job=[${job.locationRestriction.join(",")}] sub=[${expanded.join(",")}]`;
   }
   return null;
 }

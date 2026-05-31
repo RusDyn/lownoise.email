@@ -7,8 +7,14 @@ const ALIAS_MAP: Record<string, string> = { UK: "GB" };
 // Derived at module load — all 27 EU member alpha-2 codes
 const EU_CODES: string[] = Object.keys(getAllCountries()).filter((c) => euMember(c));
 
+/** Normalize a single country code: trim, uppercase, resolve UK→GB alias */
+export function normalizeCode(code: string): string {
+  const canonical = code.trim().toUpperCase();
+  return ALIAS_MAP[canonical] ?? canonical;
+}
+
 export function expandAuthCountries(codes: string[]): string[] {
-  let result = codes.map((c) => ALIAS_MAP[c] ?? c);
+  let result = codes.map(normalizeCode);
   if (result.includes("EU")) {
     result = result.filter((c) => c !== "EU").concat(EU_CODES);
   }

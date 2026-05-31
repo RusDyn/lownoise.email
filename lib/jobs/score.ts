@@ -1,4 +1,5 @@
 import type { StructuredJob, Subscriber } from "./types";
+import { expandAuthCountries } from "./normalize";
 
 export function scoreJob(job: StructuredJob, subscriber: Subscriber): number {
   let score = 0;
@@ -40,6 +41,7 @@ export function scoreJob(job: StructuredJob, subscriber: Subscriber): number {
 }
 
 export function filterAndRankJobs(jobs: StructuredJob[], subscriber: Subscriber): StructuredJob[] {
+  const authCodes = expandAuthCountries(subscriber.authCountries);
   return jobs
     .filter((job) => {
       if (job.visaRequirement === "US" && !subscriber.hasUSVisa) return false;
@@ -47,8 +49,8 @@ export function filterAndRankJobs(jobs: StructuredJob[], subscriber: Subscriber)
       // Filter jobs that restrict to countries the subscriber isn't authorized for
       if (
         job.locationRestriction.length > 0 &&
-        subscriber.authCountries.length > 0 &&
-        !job.locationRestriction.some((c) => subscriber.authCountries.includes(c))
+        authCodes.length > 0 &&
+        !job.locationRestriction.some((c) => authCodes.includes(c))
       ) return false;
       return true;
     })

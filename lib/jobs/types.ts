@@ -39,6 +39,7 @@ export interface Subscriber {
   keywords: string[];
   remote: string;
   location: string;
+  timezone: string;
   authCountries: string[];
   hasUSVisa: boolean;
 }

@@ -79,7 +79,7 @@ export const sendDigest = inngest.createFunction(
     await step.run("process-contacts", async () => {
       const resend = new Resend(process.env.RESEND_API_KEY);
 
-      const batchSize = 10;
+      const batchSize = 4; // stay under Resend's 5 req/sec limit
       for (let i = 0; i < subscribers.length; i += batchSize) {
         const batch = subscribers.slice(i, i + batchSize);
         await Promise.all(
@@ -94,7 +94,7 @@ export const sendDigest = inngest.createFunction(
             const manageToken = await createManageToken(sub.email);
             const manageUrl = `${BASE_URL}/manage?token=${encodeURIComponent(manageToken)}`;
 
-            await resend.contacts.update({
+            const { error } = await resend.contacts.update({
               id: sub.id,
               properties: {
                 jobs_count: String(ranked.length),
@@ -102,8 +102,12 @@ export const sendDigest = inngest.createFunction(
                 manage_url: manageUrl,
               },
             });
+            if (error) throw new Error(`contacts.update failed for ${sub.id}: ${JSON.stringify(error)}`);
           })
         );
+        if (i + batchSize < subscribers.length) {
+          await new Promise((r) => setTimeout(r, 1000));
+        }
       }
     });
 

@@ -11,11 +11,11 @@ const mono = JetBrains_Mono({
 export const metadata: Metadata = {
   title: "lownoise.email — high-signal engineering jobs",
   description:
-    "One email a day, personalized for you. From ~12,000 fresh engineering roles we score every posting against your stack and ship the top 10 matches straight to your inbox.",
+    "One email a day, personalized for you. From ~6,000 fresh engineering roles scanned daily, we score every posting against your stack — top 10 matches straight to your inbox.",
   openGraph: {
     title: "lownoise.email — high-signal engineering jobs",
     description:
-      "One email a day, personalized for you. From ~12,000 fresh engineering roles we score every posting against your stack and ship the top 10 matches straight to your inbox.",
+      "One email a day, personalized for you. From ~6,000 fresh engineering roles scanned daily, we score every posting against your stack — top 10 matches straight to your inbox.",
     url: "https://lownoise.email",
     siteName: "lownoise.email",
     type: "website",

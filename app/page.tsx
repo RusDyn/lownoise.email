@@ -10,7 +10,7 @@ export default function Home() {
         </div>
         <div className="status">
           <span className="dot" />
-          <span>scanning · 142 sources · live</span>
+          <span>scanning · Ashby + LinkedIn · live</span>
         </div>
       </div>
 
@@ -34,8 +34,8 @@ export default function Home() {
             <span className="cursor" />
           </h1>
           <p className="tagline">
-            One email a day, personalized for you. From ~12,000 fresh
-            engineering roles we score every posting against your stack and ship
+            One email a day, personalized for you. From ~6,000 fresh
+            engineering roles scanned daily we score every posting against your stack and ship
             the <em>top 10 matches</em> straight to your inbox.
           </p>
         </div>
@@ -48,34 +48,28 @@ export default function Home() {
           <span className="title">how it works</span>
         </div>
         <p className="lede">
-          We crawl <em>Ashby</em>, <em>Greenhouse</em>, <em>Lever</em>,{" "}
-          <em>LinkedIn</em>, and external company pages every few minutes. Then
+          We crawl <em>Ashby</em> and{" "}
+          <em>LinkedIn</em> around the clock. Then
           — the part nobody else does — we{" "}
           <em>score every role against your profile</em> and only send the
           highest matches.
         </p>
         <div className="ats" aria-label="sources">
           <span>ashby</span>
-          <span>greenhouse</span>
-          <span>lever</span>
           <span>linkedin</span>
-          <span>workable</span>
-          <span>rippling</span>
-          <span>recruitee</span>
-          <span>teamtailor</span>
-          <span className="more">+ 130 more</span>
+          <span className="more">+ greenhouse, lever &amp; more soon</span>
         </div>
         <div className="pipe" aria-label="how roles get to your inbox">
           <div className="step">
             <div className="lbl">01 · scan</div>
-            <div className="n">~12,000</div>
-            <div className="desc">fresh engineering roles indexed every 24h</div>
+            <div className="n">~6,000</div>
+            <div className="desc">fresh remote engineering roles scanned every 24h</div>
           </div>
           <div className="step">
             <div className="lbl">02 · filter</div>
-            <div className="n">~1,800</div>
+            <div className="n">dedup</div>
             <div className="desc">
-              remove Easy Apply, scam aggregators, ghosts
+              remove Easy Apply, scam aggregators, ghost listings
             </div>
           </div>
           <div className="step">
@@ -256,9 +250,8 @@ export default function Home() {
           <summary>How fresh is &ldquo;fresh&rdquo;?</summary>
           <div className="a">
             Most roles in your email were posted in the last 24 hours; many
-            within the last 6. We re-scan high-signal ATS endpoints every few
-            minutes so listings hit your inbox before the application count
-            spirals.
+            within the last 6. We re-scan high-signal ATS endpoints every hour
+            so listings hit your inbox before the application count spirals.
           </div>
         </details>
         <details>
@@ -291,6 +284,7 @@ export default function Home() {
           search
         </div>
         <div className="right">
+          <a href="https://github.com/RusDyn/lownoise.email">github ★</a>
           <a href="#subscribe">subscribe</a>
           <a href="/privacy">privacy</a>
           <a href="/terms">terms</a>

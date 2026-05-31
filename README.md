@@ -1,6 +1,11 @@
 # lownoise.email
 
-Daily personalized engineering job digest. Scrapes ~12,000 fresh roles from Ashby, Greenhouse, Lever, LinkedIn, and 130+ other ATS sources every hour, scores each posting against your stack and preferences, and delivers up to 10 top matches to your inbox once a day — no dashboard, no Easy Apply noise, no ghost jobs.
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+[![GitHub stars](https://img.shields.io/github/stars/RusDyn/lownoise.email?style=social)](https://github.com/RusDyn/lownoise.email)
+
+Daily personalized engineering job digest. Scrapes ~6,000 fresh remote engineering roles every 24h from **Ashby** (via Serper Google search) and **LinkedIn** (via Apify), enriches each posting with Firecrawl + DeepSeek, matches it against your stack and preferences, and delivers up to 10 top matches to your inbox once a day — no dashboard, no Easy Apply noise.
+
+→ **[lownoise.email](https://lownoise.email)** · [GitHub](https://github.com/RusDyn/lownoise.email)
 
 ## How it works
 
@@ -30,7 +35,7 @@ Inngest orchestrates the pipeline with hourly scrape jobs and a daily digest sen
 
 ```bash
 npm install
-cp .env.local.example .env.local  # fill in the variables below
+cp .env.example .env.local  # fill in the variables below
 npm run dev
 ```
 
@@ -60,13 +65,28 @@ DEEPSEEK_API_KEY=          # platform.deepseek.com
 # Upstash Redis (job storage + dedup)
 UPSTASH_REDIS_REST_URL=
 UPSTASH_REDIS_REST_TOKEN=
+
+# Email confirmation + manage links
+MANAGE_HMAC_SECRET=        # 32+ random chars — signs manage URL tokens
 ```
 
 ## Scripts
 
 ```bash
-npm run dev      # start Next.js dev server
-npm run build    # production build
-npm run start    # start production server
-npm run lint     # run ESLint
+npm run dev         # start Next.js dev server
+npm run build       # production build
+npm run start       # start production server
+npm run lint        # run ESLint
+npm run test:digest # send a one-shot test digest
 ```
+
+## License
+
+MIT — see [LICENSE](./LICENSE).
+
+## Roadmap
+
+- [ ] **Greenhouse, Lever, Workable** — expand beyond Ashby + LinkedIn to more ATS sources
+- [ ] **Multi-engineer profile scoring** — deeper LLM-based match scoring against your specific stack
+- [ ] **Daily volume scaling** — grow from current throughput toward ~12,000 fresh roles indexed per 24h
+- [ ] **Self-serve preference management** — update keywords, location, and remote prefs without emailing us

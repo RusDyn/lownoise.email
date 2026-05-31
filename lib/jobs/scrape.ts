@@ -114,15 +114,16 @@ export async function scrapeSerper(): Promise<RawJob[]> {
         continue;
       }
 
-      const normalized = normalizeJobUrl(cleaned);
-      if (!normalized) continue;
-
-      // Resolve URL shorteners and redirect chains to the final destination.
-      const url = await resolveRedirects(normalized);
-      if (url !== normalized) {
-        console.log("scrapeSerper: redirected", normalized, "→", url);
+      // Resolve URL shorteners and redirect chains before normalizing so
+      // normalizeJobUrl sees the final destination and can strip its
+      // /application or /apply suffixes.
+      const resolved = await resolveRedirects(cleaned);
+      if (resolved !== cleaned) {
+        console.log("scrapeSerper: redirected", cleaned, "→", resolved);
       }
 
+      const url = normalizeJobUrl(resolved);
+      if (!url) continue;
       jobs.push({
         title: item.title.replace(/ - Jobs$/, "").trim(),
         url,
@@ -176,14 +177,19 @@ export async function scrapeApify(): Promise<RawJob[]> {
       if (!item.workRemoteAllowed) continue;
       if ((item.applicantsCount ?? 0) >= 100) continue;
 
-      const normalized = normalizeJobUrl(cleanUrl(item.applyUrl ?? ""));
-      if (!normalized) continue;
+      const cleaned = cleanUrl(item.applyUrl ?? "");
+      if (!cleaned) continue;
 
-      // Resolve URL shorteners and redirect chains to the final destination.
-      const url = await resolveRedirects(normalized);
-      if (url !== normalized) {
-        console.log("scrapeApify: redirected", normalized, "→", url);
+      // Resolve URL shorteners and redirect chains before normalizing so
+      // normalizeJobUrl sees the final destination and can strip its
+      // /application or /apply suffixes.
+      const resolved = await resolveRedirects(cleaned);
+      if (resolved !== cleaned) {
+        console.log("scrapeApify: redirected", cleaned, "→", resolved);
       }
+
+      const url = normalizeJobUrl(resolved);
+      if (!url) continue;
 
       jobs.push({
         title: item.title ?? "",

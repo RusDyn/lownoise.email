@@ -113,13 +113,16 @@ export const sendDigest = inngest.createFunction(
       const segmentId = process.env.RESEND_SEGMENT_ID;
       if (!segmentId) throw new Error("RESEND_SEGMENT_ID is not configured");
 
-      await resend.broadcasts.create({
+      const { data, error } = await resend.broadcasts.create({
         segmentId,
         from: "Alex <dyn@lownoise.email>",
         subject: "{{{contact.jobs_count}}} fresh remote backend/platform jobs",
         html: buildBroadcastHtml(),
         send: true,
       });
+
+      if (error) throw new Error(`Resend broadcasts.create failed: ${JSON.stringify(error)}`);
+      return data;
     });
 
     return { sent: subscribers.length };

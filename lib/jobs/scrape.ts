@@ -30,6 +30,45 @@ function cleanUrl(url: string): string {
   }
 }
 
+// Ashby company pages have one path segment (/company) and list multiple jobs.
+// Job listings have two segments (/company/uuid). Filter out company pages because
+// the LLM can't extract required single-job fields from a list page.
+function isAshbyCompanyPage(url: string): boolean {
+  try {
+    const u = new URL(url);
+    if (u.hostname !== "jobs.ashbyhq.com") return false;
+    const segments = u.pathname.split("/").filter(Boolean);
+    return segments.length === 1;
+  } catch {
+    return false;
+  }
+}
+
+// Follow HTTP redirects to resolve URL shorteners (click.appcast.io, lnkd.in,
+// etc.) to the final destination URL. Uses HEAD requests with manual redirect
+// handling so we don't download page bodies.
+async function resolveRedirects(url: string, maxHops = 5): Promise<string> {
+  let current = url;
+  for (let i = 0; i < maxHops; i++) {
+    try {
+      const res = await fetch(current, {
+        method: "HEAD",
+        redirect: "manual",
+        signal: AbortSignal.timeout(5_000),
+      });
+      const location = res.headers.get("location");
+      if (!location || res.status < 300 || res.status >= 400) {
+        return current;
+      }
+      // Resolve relative redirects against the current URL
+      current = new URL(location, current).href;
+    } catch {
+      return current; // On error, return the last known URL
+    }
+  }
+  return current;
+}
+
 // Strip ATS apply-form suffixes so we scrape the job listing, not the form page.
 // Form pages return near-empty markdown because form/input tags are excluded.
 export function normalizeJobUrl(url: string): string {
@@ -65,7 +104,25 @@ export async function scrapeSerper(): Promise<RawJob[]> {
     const organic = data.organic ?? [];
 
     for (const item of organic) {
-      const url = normalizeJobUrl(cleanUrl(item.link));
+      const cleaned = cleanUrl(item.link);
+      if (!cleaned) continue;
+
+      // Skip Ashby company pages — they list multiple jobs and won't
+      // have the required title/company/workMode fields for a single listing.
+      if (isAshbyCompanyPage(cleaned)) {
+        console.warn("scrapeSerper: skipping ashby company page:", cleaned);
+        continue;
+      }
+
+      // Resolve URL shorteners and redirect chains before normalizing so
+      // normalizeJobUrl sees the final destination and can strip its
+      // /application or /apply suffixes.
+      const resolved = await resolveRedirects(cleaned);
+      if (resolved !== cleaned) {
+        console.log("scrapeSerper: redirected", cleaned, "→", resolved);
+      }
+
+      const url = normalizeJobUrl(resolved);
       if (!url) continue;
       jobs.push({
         title: item.title.replace(/ - Jobs$/, "").trim(),
@@ -120,7 +177,18 @@ export async function scrapeApify(): Promise<RawJob[]> {
       if (!item.workRemoteAllowed) continue;
       if ((item.applicantsCount ?? 0) >= 100) continue;
 
-      const url = normalizeJobUrl(cleanUrl(item.applyUrl ?? ""));
+      const cleaned = cleanUrl(item.applyUrl ?? "");
+      if (!cleaned) continue;
+
+      // Resolve URL shorteners and redirect chains before normalizing so
+      // normalizeJobUrl sees the final destination and can strip its
+      // /application or /apply suffixes.
+      const resolved = await resolveRedirects(cleaned);
+      if (resolved !== cleaned) {
+        console.log("scrapeApify: redirected", cleaned, "→", resolved);
+      }
+
+      const url = normalizeJobUrl(resolved);
       if (!url) continue;
 
       jobs.push({

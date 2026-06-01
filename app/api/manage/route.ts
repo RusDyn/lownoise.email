@@ -25,7 +25,7 @@ async function findContactByEmail(segmentId: string, email: string) {
       ...(after ? { after } : {}),
     });
     if (error || !data || data.data.length === 0) break;
-    const found = data.data.find((c) => c.email === email);
+    const found = data.data.find((c) => c.email?.trim().toLowerCase() === email.trim().toLowerCase());
     if (found) return found;
     if (!data.has_more) break;
     after = data.data.at(-1)?.id;

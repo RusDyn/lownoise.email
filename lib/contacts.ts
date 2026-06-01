@@ -35,7 +35,8 @@ export async function findContactByEmail(
     });
     if (error || !data) return null;
 
-    const contact = data.data.find((c) => c.email === email);
+    const normalized = email.trim().toLowerCase();
+    const contact = data.data.find((c) => c.email?.trim().toLowerCase() === normalized);
     if (contact) {
       if (!opts?.includeUnsubscribed && contact.unsubscribed) return null;
 
@@ -50,7 +51,7 @@ export async function findContactByEmail(
       };
     }
 
-    if (!data.has_more) break;
+    if (!data.has_more || !data.data.length) break;
     after = data.data.at(-1)?.id;
   }
 
@@ -101,7 +102,7 @@ export async function listActiveContacts(): Promise<ResendContact[]> {
 
     all.push(...detailed.filter((c): c is ResendContact => c !== null));
 
-    if (!data.has_more) break;
+    if (!data.has_more || !data.data.length) break;
     after = data.data.at(-1)?.id;
   }
 

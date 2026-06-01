@@ -30,6 +30,8 @@ export const sendDigest = inngest.createFunction(
         const locationStr = (c.properties["location"] ?? "").toLowerCase();
         const tzProp = c.properties["timezone"] ?? "";
 
+        const authCountries = authStr.split(",").map((s) => s.trim().toUpperCase()).filter(Boolean);
+
         return {
           id: c.id,
           email: c.email,
@@ -37,8 +39,8 @@ export const sendDigest = inngest.createFunction(
           remote: remoteStr.toLowerCase(),
           location: stripTimezone(locationStr),
           timezone: tzProp.toUpperCase() || extractTimezone(locationStr),
-          authCountries: authStr.split(",").map((s) => s.trim().toUpperCase()).filter(Boolean),
-          hasUSVisa: authStr.toUpperCase().includes("US"),
+          authCountries,
+          hasUSVisa: authCountries.includes("US"),
         } satisfies Subscriber;
       });
     });

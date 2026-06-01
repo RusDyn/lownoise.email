@@ -16,6 +16,9 @@ export default async function proxy(request: NextRequest) {
     token: process.env.UPSTASH_REDIS_REST_TOKEN!,
   });
 
+  // Shared 5 req/hour/IP across all email-sending endpoints — intentional:
+  // subscribe, verify-email, and send-manage-link all send email and a
+  // combined limit prevents abuse holistically.
   const key = `rate:email:${ip}`;
   // Atomic INCR + EXPIRE-if-new: redis.eval runs a Lua script server-side,
   // preventing the key from becoming permanent if the process dies between two commands

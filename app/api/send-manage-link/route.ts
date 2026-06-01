@@ -29,8 +29,8 @@ export async function POST(req: Request) {
   }
 
   const token = await createManageToken(email);
-  const origin = new URL(req.url).origin;
-  const manageUrl = `${origin}/manage?token=${encodeURIComponent(token)}`;
+  const base = (process.env.NEXT_PUBLIC_BASE_URL ?? "https://lownoise.email").replace(/\/+$/, "");
+  const manageUrl = `${base}/manage?token=${encodeURIComponent(token)}`;
 
   const { error } = await resend.emails.send({
     from: "lownoise.email <jobs@lownoise.email>",

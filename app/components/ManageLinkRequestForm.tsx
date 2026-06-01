@@ -22,13 +22,15 @@ export default function ManageLinkRequestForm() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),
       });
-      const data = await res.json();
       if (!res.ok) {
         if (res.status === 429) {
           throw new Error("Too many requests, please try again later.");
         }
-        throw new Error(data.error ?? "request failed");
+        let msg = "request failed";
+        try { const data = await res.json(); msg = data.error ?? msg; } catch { /* not JSON */ }
+        throw new Error(msg);
       }
+      const data = await res.json();
       setSubmittedEmail(email);
       setSubmitted(true);
     } catch (err) {

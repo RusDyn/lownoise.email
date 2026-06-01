@@ -3,7 +3,7 @@ import { welcomeHtml } from "@/lib/email/welcome";
 
 export const runtime = "edge";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+const resend = new Resend(process.env.RESEND_API_KEY || "re_placeholder");
 
 interface SubscribeBody {
   email: string;

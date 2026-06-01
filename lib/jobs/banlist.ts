@@ -6,7 +6,7 @@
  * domains waste Firecrawl credits, LLM tokens, and subscriber trust.
  *
  * To add a domain: append it to BANNED_DOMAINS and, if it matches a
- * repeatable pattern, add the pattern to SUSPICIOUS_DOMAIN_PATTERNS so
+ * repeatable pattern, add the pattern to SUSPICIOUS_PATTERNS so
  * sister domains get caught automatically.
  */
 

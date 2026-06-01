@@ -2,6 +2,7 @@ import { Resend } from "resend";
 import { getJobsSince } from "@/lib/jobs/store";
 import { filterAndRankJobs } from "@/lib/jobs/score";
 import { formatJobHtml, buildBroadcastHtml, JOB_DIVIDER_HTML } from "@/lib/email/digest";
+import { contactPropertiesSchema } from "@/lib/schemas";
 import type { Subscriber } from "@/lib/jobs/types";
 
 async function main() {
@@ -35,16 +36,17 @@ async function main() {
       active.map(async (c) => {
         const { data: detail } = await resend.contacts.get(c.id);
         if (!detail) return null;
-        const props = (detail.properties ?? {}) as unknown as Record<string, string>;
-        const kwStr = props["keywords"] ?? "";
-        const authStr = props["auth_countries"] ?? "";
+        // Zod schema coerces every property to string — safe to call .toLowerCase, .split, etc.
+        const props = contactPropertiesSchema.parse(detail.properties ?? {});
+        const kwStr = props["keywords"];
+        const authStr = props["auth_countries"];
         return {
           id: c.id,
           email: c.email,
           keywords: kwStr.split(",").map((k) => k.trim().toLowerCase()).filter(Boolean),
-          remote: (props["remote"] ?? "").toLowerCase(),
-          location: (props["location"] ?? "").toLowerCase(),
-          timezone: (props["timezone"] ?? "").toUpperCase(),
+          remote: props["remote"].toLowerCase(),
+          location: props["location"].toLowerCase(),
+          timezone: props["timezone"].toUpperCase(),
           authCountries: authStr.split(",").map((s) => s.trim().toUpperCase()).filter(Boolean),
           hasUSVisa: authStr.toUpperCase().includes("US"),
         } satisfies Subscriber;

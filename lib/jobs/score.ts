@@ -5,7 +5,7 @@ export function scoreJob(job: StructuredJob, subscriber: Subscriber): number {
   let score = 0;
   const kws = subscriber.keywords.map((k) => k.toLowerCase());
   const titleLower = job.title.toLowerCase();
-  const locationLower = subscriber.location.toLowerCase();
+  const locationLower = (subscriber.location ?? "").toLowerCase();
 
   // +10 if geoScope matches subscriber location or is global
   if (job.geoScope === "global") {

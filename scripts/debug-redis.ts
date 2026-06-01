@@ -79,7 +79,7 @@ function scoreBreakdown(job: StructuredJob, sub: Subscriber): { score: number; b
   const parts: string[] = [];
   const kws = sub.keywords.map((k) => k.toLowerCase());
   const titleLower = job.title.toLowerCase();
-  const locationLower = sub.location.toLowerCase();
+  const locationLower = (sub.location ?? "").toLowerCase();
 
   if (job.geoScope === "global") {
     score += 10;

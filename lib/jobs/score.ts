@@ -65,6 +65,15 @@ export function scoreJob(job: StructuredJob, subscriber: Subscriber): number {
     }
   }
 
+  // Require at least one strong relevance signal: title match or skill match.
+  // Body mentions alone (e.g. "work with our DevOps team" in an unrelated role)
+  // are too noisy to qualify a job as relevant.
+  if (kws.length > 0) {
+    const hasTitleMatch = kws.some((k) => wordMatch(titleLower, k));
+    const hasSkillMatch = skillMatchCount > 0;
+    if (!hasTitleMatch && !hasSkillMatch) return 0;
+  }
+
   // tiebreak
   score += Math.random() * 0.1;
 
@@ -79,7 +88,12 @@ export function filterAndRankJobs(jobs: StructuredJob[], subscriber: Subscriber)
       // Cumulative flexibility: "remote" subscribers only see remote-friendly jobs.
       // "hybrid" and "onsite" subscribers see all work modes — hybrid subscribers
       // also get fully remote jobs since remote is strictly more flexible.
+      // Remote subscribers: only remote-friendly jobs
       if (subscriber.remote === "remote" && !job.isRemoteFriendly) return false;
+      // Hybrid subscribers: block truly onsite jobs
+      if (subscriber.remote === "hybrid" && job.workMode === "onsite" && !job.isRemoteFriendly) return false;
+      // Onsite subscribers: block fully remote jobs
+      if (subscriber.remote === "onsite" && job.workMode === "remote") return false;
       // Filter jobs that restrict to countries the subscriber isn't authorized for
       if (
         job.locationRestriction.length > 0 &&

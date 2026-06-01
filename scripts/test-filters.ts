@@ -1,9 +1,9 @@
 /**
  * Deterministic unit test for filterAndRankJobs.
  *
- * Tests the Israel/hybrid case: a subscriber with location=Israel,
- * authCountries=["IL"], remote="hybrid" should see fully remote jobs
- * alongside hybrid/onsite jobs available to their location.
+ * Tests workplace mode filtering (remote/hybrid/onsite) and the keyword
+ * relevance gate (title or skill match required — body-only matches
+ * are not enough).
  *
  * Run: npx tsx scripts/test-filters.ts
  */
@@ -11,12 +11,34 @@
 import { filterAndRankJobs } from "../lib/jobs/score";
 import type { StructuredJob, Subscriber } from "../lib/jobs/types";
 
-// ── Subscriber fixture ────────────────────────────────────────────────────────
+// ── Subscriber fixtures ────────────────────────────────────────────────────────
 const ISRAEL_HYBRID: Subscriber = {
   id: "test-il-hybrid",
   email: "test@test.invalid",
   keywords: ["devops"],
   remote: "hybrid",
+  location: "israel",
+  timezone: "",
+  authCountries: ["IL"],
+  hasUSVisa: false,
+};
+
+const ISRAEL_ONSITE: Subscriber = {
+  id: "test-il-onsite",
+  email: "test-onsite@test.invalid",
+  keywords: ["devops"],
+  remote: "onsite",
+  location: "israel",
+  timezone: "",
+  authCountries: ["IL"],
+  hasUSVisa: false,
+};
+
+const ISRAEL_REMOTE: Subscriber = {
+  id: "test-il-remote",
+  email: "test-remote@test.invalid",
+  keywords: ["devops"],
+  remote: "remote",
   location: "israel",
   timezone: "",
   authCountries: ["IL"],
@@ -84,7 +106,7 @@ const usRemote = makeJob({
   locationRestriction: ["US"],
 });
 
-// Non-remote-friendly onsite job — should pass (hybrid sees all work modes)
+// Non-remote-friendly onsite job — should be BLOCKED for hybrid
 const onsiteLocal = makeJob({
   url: "https://example.com/onsite",
   title: "Onsite DevOps",
@@ -115,6 +137,34 @@ const ilRemote = makeJob({
   locationRestriction: ["IL"],
 });
 
+// Body-only keyword match — no title or skill match. Must be filtered by
+// the relevance gate.
+const bodyOnlyMatch = makeJob({
+  url: "https://example.com/body-only",
+  title: "Head of Claims",
+  skills: ["insurance", "claims"],
+  body: "Work with our DevOps team to streamline claim processing.",
+});
+
+// No keyword match at all — irrelevant job. Must be filtered.
+const noKeywordMatch = makeJob({
+  url: "https://example.com/no-match",
+  title: "AI Engineer",
+  skills: ["python", "pytorch", "ml"],
+  body: "Build machine learning models for fraud detection.",
+});
+
+// Onsite job that the LLM contradictorily marked remote-friendly —
+// should pass for hybrid (isRemoteFriendly wins over workMode)
+const onsiteButRemoteFriendly = makeJob({
+  url: "https://example.com/onsite-friendly",
+  title: "Onsite-but-Friendly DevOps",
+  workMode: "onsite",
+  isRemoteFriendly: true,
+  skills: ["devops"],
+  locationRestriction: [],
+});
+
 // ── Test runner ───────────────────────────────────────────────────────────────
 
 let failures = 0;
@@ -128,36 +178,103 @@ function assert(condition: boolean, label: string): void {
   }
 }
 
-const allJobs = [globalRemote, localHybrid, usRemote, onsiteLocal, usVisaJob, ilRemote];
-const results = filterAndRankJobs(allJobs, ISRAEL_HYBRID);
-const resultUrls = new Set(results.map((j) => j.url));
+// ── Section 1: Hybrid subscriber ──────────────────────────────────────────────
 
-console.log(`\nFilter results: ${results.length}/${allJobs.length} jobs passed\n`);
+console.log("\n── Hybrid subscriber (remote=hybrid) ──");
 
-// ── Assertions ────────────────────────────────────────────────────────────────
+const allJobs = [
+  globalRemote, localHybrid, usRemote, onsiteLocal, usVisaJob, ilRemote,
+  bodyOnlyMatch, noKeywordMatch, onsiteButRemoteFriendly,
+];
+const hybridResults = filterAndRankJobs(allJobs, ISRAEL_HYBRID);
+const hybridUrls = new Set(hybridResults.map((j) => j.url));
 
-// Must pass: fully remote global job shown to hybrid subscriber
-assert(resultUrls.has(globalRemote.url), "global remote job passes for hybrid subscriber");
+console.log(`  ${hybridResults.length}/${allJobs.length} jobs passed\n`);
+
+// Must pass: fully remote global job
+assert(hybridUrls.has(globalRemote.url), "hybrid: global remote job passes");
 
 // Must pass: local hybrid job
-assert(resultUrls.has(localHybrid.url), "local hybrid job passes");
+assert(hybridUrls.has(localHybrid.url), "hybrid: local hybrid job passes");
 
 // Must NOT pass: US-restricted remote job (IL subscriber not authorized for US)
-assert(!resultUrls.has(usRemote.url), "US-restricted remote job blocked for IL subscriber");
+assert(!hybridUrls.has(usRemote.url), "hybrid: US-restricted remote job blocked");
 
-// Must pass: non-remote-friendly onsite job (hybrid sees all work modes)
-assert(resultUrls.has(onsiteLocal.url), "onsite job passes for hybrid subscriber");
+// Must NOT pass: onsite-only job (hybrid shouldn't see truly onsite jobs)
+assert(!hybridUrls.has(onsiteLocal.url), "hybrid: onsite-only job blocked");
 
-// Must NOT pass: US visa requirement (subscriber lacks hasUSVisa)
-assert(!resultUrls.has(usVisaJob.url), "US visa job blocked for non-US subscriber");
+// Must NOT pass: US visa requirement
+assert(!hybridUrls.has(usVisaJob.url), "hybrid: US visa job blocked");
 
 // Must pass: IL-restricted remote job (location overlap)
-assert(resultUrls.has(ilRemote.url), "IL-restricted remote job passes for IL subscriber");
+assert(hybridUrls.has(ilRemote.url), "hybrid: IL-restricted remote job passes");
 
-// ── Scoring assertion ─────────────────────────────────────────────────────────
-// Global remote job should get geoScope bonus for hybrid subscriber
-const scoredGlobal = results.find((j) => j.url === globalRemote.url);
-assert(scoredGlobal != null, "global remote job included in results");
+// Must NOT pass: body-only keyword match (no title or skill match)
+assert(!hybridUrls.has(bodyOnlyMatch.url), "hybrid: body-only match filtered by relevance gate");
+
+// Must NOT pass: no keyword match at all
+assert(!hybridUrls.has(noKeywordMatch.url), "hybrid: no-keyword job filtered by relevance gate");
+
+// Must pass: onsite workMode but isRemoteFriendly=true (isRemoteFriendly wins)
+assert(hybridUrls.has(onsiteButRemoteFriendly.url), "hybrid: onsite+remote-friendly job passes");
+
+// ── Section 2: Onsite subscriber ──────────────────────────────────────────────
+
+console.log("\n── Onsite subscriber (remote=onsite) ──");
+
+const onsiteResults = filterAndRankJobs(allJobs, ISRAEL_ONSITE);
+const onsiteUrls = new Set(onsiteResults.map((j) => j.url));
+
+console.log(`  ${onsiteResults.length}/${allJobs.length} jobs passed\n`);
+
+// Must pass: local hybrid job
+assert(onsiteUrls.has(localHybrid.url), "onsite: local hybrid job passes");
+
+// Must pass: onsite job
+assert(onsiteUrls.has(onsiteLocal.url), "onsite: onsite job passes");
+
+// Must NOT pass: fully remote job (onsite subscriber shouldn't see remote)
+assert(!onsiteUrls.has(globalRemote.url), "onsite: fully remote job blocked");
+
+// Must NOT pass: IL-restricted remote job (still remote-only)
+assert(!onsiteUrls.has(ilRemote.url), "onsite: IL-restricted remote job blocked");
+
+// Must NOT pass: body-only match
+assert(!onsiteUrls.has(bodyOnlyMatch.url), "onsite: body-only match filtered");
+
+// Must NOT pass: no keyword match
+assert(!onsiteUrls.has(noKeywordMatch.url), "onsite: no-keyword job filtered");
+
+// Must pass: onsite+remote-friendly (actually passes because workMode="onsite",
+// not blocked by the remote filter for onsite subscribers)
+assert(onsiteUrls.has(onsiteButRemoteFriendly.url), "onsite: onsite+remote-friendly job passes");
+
+// ── Section 3: Remote subscriber ──────────────────────────────────────────────
+
+console.log("\n── Remote subscriber (remote=remote) ──");
+
+const remoteResults = filterAndRankJobs(allJobs, ISRAEL_REMOTE);
+const remoteUrls = new Set(remoteResults.map((j) => j.url));
+
+console.log(`  ${remoteResults.length}/${allJobs.length} jobs passed\n`);
+
+// Must pass: fully remote global job
+assert(remoteUrls.has(globalRemote.url), "remote: global remote job passes");
+
+// Must NOT pass: local hybrid (not remote-friendly)
+assert(!remoteUrls.has(localHybrid.url), "remote: non-remote-friendly hybrid blocked");
+
+// Must NOT pass: onsite job (not remote-friendly)
+assert(!remoteUrls.has(onsiteLocal.url), "remote: onsite job blocked");
+
+// Must NOT pass: body-only match
+assert(!remoteUrls.has(bodyOnlyMatch.url), "remote: body-only match filtered");
+
+// Must NOT pass: no keyword match
+assert(!remoteUrls.has(noKeywordMatch.url), "remote: no-keyword job filtered");
+
+// Must pass: onsite+remote-friendly (isRemoteFriendly=true)
+assert(remoteUrls.has(onsiteButRemoteFriendly.url), "remote: onsite+remote-friendly job passes");
 
 // ── Result ────────────────────────────────────────────────────────────────────
 console.log(`\n${failures === 0 ? "✓ All assertions passed" : `✗ ${failures} assertion(s) failed`}`);

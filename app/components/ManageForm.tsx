@@ -199,7 +199,7 @@ export default function ManageForm({ token, isNew, initialPrefs }: ManageFormPro
               <option key={tz} value={tz} />
             ))}
           </datalist>
-          <div className="helper">Used to personalize digest timing in future.</div>
+          <div className="helper">Used to prioritize jobs whose region overlaps your working hours.</div>
         </div>
 
         <div className="field">

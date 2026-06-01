@@ -3,8 +3,6 @@ import { welcomeHtml } from "@/lib/email/welcome";
 
 export const runtime = "edge";
 
-const resend = new Resend(process.env.RESEND_API_KEY || "re_placeholder");
-
 interface SubscribeBody {
   email: string;
   stack: string[];
@@ -45,10 +43,17 @@ export async function POST(req: Request) {
     return Response.json({ error: "invalid field values" }, { status: 400 });
   }
 
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) {
+    return Response.json({ error: "API key not configured" }, { status: 500 });
+  }
+
   const segmentId = process.env.RESEND_SEGMENT_ID;
   if (!segmentId) {
     return Response.json({ error: "segment not configured" }, { status: 500 });
   }
+
+  const resend = new Resend(apiKey);
 
   const { error: contactError } = await resend.contacts.create({
     segments: [{ id: segmentId }],

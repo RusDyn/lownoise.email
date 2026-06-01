@@ -4,8 +4,6 @@ import { confirmationHtml } from "@/lib/email/confirm";
 
 export const runtime = "edge";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-
 export async function POST(req: Request) {
   let body: { email?: string };
   try {
@@ -19,6 +17,13 @@ export async function POST(req: Request) {
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     return Response.json({ error: "valid email required" }, { status: 400 });
   }
+
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) {
+    return Response.json({ error: "API key not configured" }, { status: 500 });
+  }
+
+  const resend = new Resend(apiKey);
 
   const token = await createPendingToken(email);
   const origin = new URL(req.url).origin;

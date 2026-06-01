@@ -25,9 +25,11 @@ export function expandAuthCountries(codes: string[]): string[] {
 const TZ_SUFFIX = /\s*((?:GMT|UTC)[+-]\d{1,2}(?::\d{2})?)$/i;
 
 export function stripTimezone(location: string): string {
+  if (typeof location !== "string") return "";
   return location.replace(TZ_SUFFIX, "").trim();
 }
 
 export function extractTimezone(location: string): string {
+  if (typeof location !== "string") return "";
   return location.match(TZ_SUFFIX)?.[1]?.toUpperCase() ?? "";
 }

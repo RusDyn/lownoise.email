@@ -24,6 +24,8 @@ export const sendDigest = inngest.createFunction(
       const contacts = await listActiveContacts();
 
       return contacts.map((c) => {
+        // c.properties values are guaranteed strings by the Zod schema
+        // in fetchContactWithRetry — safe to call string methods.
         const kwStr = c.properties["keywords"] ?? "";
         const authStr = c.properties["auth_countries"] ?? "";
         const remoteStr = c.properties["remote"] ?? "";

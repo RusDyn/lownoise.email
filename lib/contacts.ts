@@ -1,4 +1,5 @@
 import { Resend } from "resend";
+import { contactPropertiesSchema } from "@/lib/schemas";
 
 export interface ResendContact {
   id: string;
@@ -23,10 +24,21 @@ async function fetchContactWithRetry(
     const { data: detail, error } = await resend.contacts.get(id);
 
     if (detail) {
+      // Zod schema coerces every property to string so downstream
+      // calls (.toLowerCase, .split, .match, .replace) never crash.
+      // safeParse used to guard against non-object detail.properties (e.g. arrays).
+      const parsed = contactPropertiesSchema.safeParse(detail.properties ?? {});
+      if (!parsed.success) {
+        console.error(
+          `contactPropertiesSchema parse failed for ${id} (${email}):`,
+          parsed.error.flatten(),
+        );
+      }
+      const props = parsed.success ? parsed.data : ({} as Record<string, string>);
       return {
         id,
         email,
-        properties: (detail.properties ?? {}) as unknown as Record<string, string>,
+        properties: props,
         unsubscribed,
       };
     }

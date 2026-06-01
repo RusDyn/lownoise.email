@@ -85,14 +85,13 @@ export function filterAndRankJobs(jobs: StructuredJob[], subscriber: Subscriber)
   return jobs
     .filter((job) => {
       if (job.visaRequirement === "US" && !subscriber.hasUSVisa) return false;
-      // Cumulative flexibility: "remote" subscribers only see remote-friendly jobs.
-      // "hybrid" and "onsite" subscribers see all work modes — hybrid subscribers
-      // also get fully remote jobs since remote is strictly more flexible.
-      // Remote subscribers: only remote-friendly jobs
+      // "remote" subscribers only see remote-friendly jobs.
+      // "hybrid" subscribers see hybrid and remote jobs; truly onsite jobs
+      //   (workMode === "onsite" && !isRemoteFriendly) are blocked.
+      // "onsite" subscribers see hybrid and onsite jobs; fully remote jobs
+      //   (workMode === "remote") are blocked.
       if (subscriber.remote === "remote" && !job.isRemoteFriendly) return false;
-      // Hybrid subscribers: block truly onsite jobs
       if (subscriber.remote === "hybrid" && job.workMode === "onsite" && !job.isRemoteFriendly) return false;
-      // Onsite subscribers: block fully remote jobs
       if (subscriber.remote === "onsite" && job.workMode === "remote") return false;
       // Filter jobs that restrict to countries the subscriber isn't authorized for
       if (

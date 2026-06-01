@@ -1,5 +1,20 @@
 import type { StructuredJob, Subscriber } from "./types";
-import { expandAuthCountries, normalizeCode } from "./normalize";
+import { expandAuthCountries, normalizeCode, parseUtcOffset } from "./normalize";
+
+/** Approximate UTC offset ranges (in hours) for each geoScope. */
+const GEOSCOPE_TZ_RANGE: Partial<Record<string, [number, number]>> = {
+  us: [-10, -5],    // Hawaii to Eastern
+  eu: [-1, 3],      // Azores to Eastern Europe
+  uk: [0, 1],       // GMT / BST
+  apac: [5.5, 12],  // India to New Zealand
+};
+
+/** Distance from `value` to the nearest edge of [min, max]. 0 when inside. */
+function distFromRange(value: number, range: [number, number]): number {
+  const [min, max] = range;
+  if (value >= min && value <= max) return 0;
+  return Math.min(Math.abs(value - min), Math.abs(value - max));
+}
 
 export function scoreJob(job: StructuredJob, subscriber: Subscriber): number {
   let score = 0;
@@ -33,6 +48,22 @@ export function scoreJob(job: StructuredJob, subscriber: Subscriber): number {
 
   // +2 if salary is specified
   if (job.salaryMin > 0) score += 2;
+
+  // Timezone compatibility: boost jobs whose geoScope overlaps the subscriber's
+  // working hours, demote jobs with severe timezone mismatch (e.g. US jobs for
+  // someone in GMT+8 would mean late-night meetings).
+  if (subscriber.timezone) {
+    const subOffset = parseUtcOffset(subscriber.timezone);
+    if (subOffset !== null) {
+      const range = GEOSCOPE_TZ_RANGE[job.geoScope];
+      if (range) {
+        const dist = distFromRange(subOffset / 60, range); // minutes → hours
+        if (dist === 0) score += 3;
+        else if (dist <= 3) score += 2;
+        else if (dist >= 8) score -= 4;
+      }
+    }
+  }
 
   // tiebreak
   score += Math.random() * 0.1;

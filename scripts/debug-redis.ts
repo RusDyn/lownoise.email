@@ -1,6 +1,20 @@
 import { getJobsSince } from "../lib/jobs/store";
-import { expandAuthCountries } from "../lib/jobs/normalize";
+import { expandAuthCountries, parseUtcOffset } from "../lib/jobs/normalize";
 import type { StructuredJob, Subscriber } from "../lib/jobs/types";
+
+/** Approximate UTC offset ranges (in hours) for each geoScope — mirrors score.ts. */
+const GEOSCOPE_TZ_RANGE: Partial<Record<string, [number, number]>> = {
+  us: [-10, -5],
+  eu: [-1, 3],
+  uk: [0, 1],
+  apac: [5.5, 12],
+};
+
+function distFromRange(value: number, range: [number, number]): number {
+  const [min, max] = range;
+  if (value >= min && value <= max) return 0;
+  return Math.min(Math.abs(value - min), Math.abs(value - max));
+}
 
 // ── Test subscribers matching the 4 reported cases ──────────────────────────
 const TEST_CASES: Array<{ label: string; sub: Subscriber }> = [
@@ -115,6 +129,27 @@ function scoreBreakdown(job: StructuredJob, sub: Subscriber): { score: number; b
   if (job.salaryMin > 0) {
     score += 2;
     parts.push("salary(+2)");
+  }
+
+  // Timezone compatibility (mirrors score.ts)
+  if (sub.timezone) {
+    const subOffset = parseUtcOffset(sub.timezone);
+    if (subOffset !== null) {
+      const range = GEOSCOPE_TZ_RANGE[job.geoScope];
+      if (range) {
+        const dist = distFromRange(subOffset / 60, range);
+        if (dist === 0) {
+          score += 3;
+          parts.push(`tz:in-range(+3)`);
+        } else if (dist <= 3) {
+          score += 2;
+          parts.push(`tz:near(+2)`);
+        } else if (dist >= 8) {
+          score -= 4;
+          parts.push(`tz:far(-4)`);
+        }
+      }
+    }
   }
 
   const passThreshold = score >= 1 ? "✓≥1" : "✗<1";

@@ -33,3 +33,14 @@ export function extractTimezone(location: string): string {
   if (typeof location !== "string") return "";
   return location.match(TZ_SUFFIX)?.[1]?.toUpperCase() ?? "";
 }
+
+/** Parse a timezone string like "GMT+1", "UTC-8", "GMT+5:30" to UTC offset in minutes.
+ *  Returns null if the string cannot be parsed. */
+export function parseUtcOffset(tz: string): number | null {
+  const m = tz.match(/^(?:GMT|UTC)([+-]\d{1,2})(?::(\d{2}))?$/i);
+  if (!m) return null;
+  const hours = parseInt(m[1], 10);
+  const mins = m[2] ? parseInt(m[2], 10) : 0;
+  const negative = m[1][0] === "-";
+  return hours * 60 + (negative ? -mins : mins);
+}

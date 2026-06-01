@@ -76,7 +76,12 @@ const TEST_CASES: Array<{ label: string; sub: Subscriber }> = [
 
 function hardFilterReason(job: StructuredJob, sub: Subscriber): string | null {
   if (job.visaRequirement === "US" && !sub.hasUSVisa) return "US visa required";
+  // Remote subscribers: only remote-friendly jobs
   if (sub.remote === "remote" && !job.isRemoteFriendly) return "not remote-friendly";
+  // Hybrid subscribers: block truly onsite jobs
+  if (sub.remote === "hybrid" && job.workMode === "onsite" && !job.isRemoteFriendly) return "onsite (not remote-friendly)";
+  // Onsite subscribers: block fully remote jobs
+  if (sub.remote === "onsite" && job.workMode === "remote") return "fully remote";
   const expanded = expandAuthCountries(sub.authCountries);
   if (
     job.locationRestriction.length > 0 &&
@@ -149,6 +154,17 @@ function scoreBreakdown(job: StructuredJob, sub: Subscriber): { score: number; b
           parts.push(`tz:far(-4)`);
         }
       }
+    }
+  }
+
+  // Relevance gate: require title or skill match when keywords are present.
+  // Body mentions alone (e.g. "work with our DevOps team" in an unrelated role)
+  // are too noisy to qualify a job as relevant.
+  if (kws.length > 0) {
+    const hasTitleMatch = kws.some((k) => wordMatch(titleLower, k));
+    const hasSkillMatch = skillMatchCount > 0;
+    if (!hasTitleMatch && !hasSkillMatch) {
+      return { score: 0, breakdown: `${parts.join(" | ")} → 0.0 ✗no relevance signal (title/skill required)` };
     }
   }
 

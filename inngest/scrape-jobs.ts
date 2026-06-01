@@ -2,6 +2,7 @@ import { inngest } from "@/lib/inngest";
 import { scrapeSerper, scrapeApify, scrapeJobPage, normalizeJobUrl } from "@/lib/jobs/scrape";
 import { structureJob } from "@/lib/jobs/structure";
 import { isKnownUrl, storeJob } from "@/lib/jobs/store";
+import { isBannedDomain, detectSuspiciousDomain } from "@/lib/jobs/banlist";
 import type { RawJob } from "@/lib/jobs/types";
 
 export const scrapeJobs = inngest.createFunction(
@@ -13,18 +14,37 @@ export const scrapeJobs = inngest.createFunction(
       return { serper, apify };
     });
 
-    // Step 2: Merge, deduplicate by URL, filter already-known
+    // Step 2: Merge, deduplicate by URL, filter already-known and banned domains
     const newJobs = (await step.run("dedup-filter", async (): Promise<RawJob[]> => {
       const merged = [...scraped.serper, ...scraped.apify].map((j) => ({
         ...j,
         url: normalizeJobUrl(j.url),
       }));
+
+      let bannedCount = 0;
       const seen = new Set<string>();
       const deduped = merged.filter((j) => {
         if (!j.url || seen.has(j.url)) return false;
+
+        // Reject known scam / AI-slop domains before they consume API calls
+        if (isBannedDomain(j.url)) {
+          bannedCount++;
+          return false;
+        }
+
+        // Log suspicious (not yet banned) domains for manual review
+        const suspicion = detectSuspiciousDomain(j.url);
+        if (suspicion.suspicious) {
+          console.warn("scrape-jobs: suspicious domain:", j.url, suspicion.reasons);
+        }
+
         seen.add(j.url);
         return true;
       });
+
+      if (bannedCount > 0) {
+        console.log(`scrape-jobs: filtered ${bannedCount} banned-domain job(s)`);
+      }
 
       const knownFlags = await Promise.all(deduped.map((j) => isKnownUrl(j.url)));
       const fresh = deduped.filter((_, i) => !knownFlags[i]);

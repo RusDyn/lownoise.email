@@ -5,8 +5,6 @@ import { manageLinkHtml } from "@/lib/email/manage-link";
 
 export const runtime = "edge";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-
 export async function POST(req: Request) {
   let body: { email?: string };
   try {
@@ -21,12 +19,19 @@ export async function POST(req: Request) {
     return Response.json({ error: "valid email required" }, { status: 400 });
   }
 
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) {
+    return Response.json({ error: "API key not configured" }, { status: 500 });
+  }
+
   // Look up the contact (default: excludes unsubscribed — only send to active subscribers)
   const contact = await findContactByEmail(email);
   if (!contact) {
     // Non-enumeration: always return ok whether the email exists or not
     return Response.json({ ok: true });
   }
+
+  const resend = new Resend(apiKey);
 
   const token = await createManageToken(email);
   const base = (process.env.NEXT_PUBLIC_BASE_URL ?? "https://lownoise.email").replace(/\/+$/, "");

@@ -40,6 +40,9 @@ async function fetchContactWithRetry(
         error,
       );
 
+      // Non-retriable: don't waste attempts on forbidden or missing contacts
+      if (status === 403 || status === 404) break;
+
       if (status === 429 && attempt < maxRetries) {
         const delay = retryAfter
           ? parseInt(retryAfter, 10) * 1000
@@ -49,11 +52,8 @@ async function fetchContactWithRetry(
       }
     }
 
-    // Not found or non-retriable error
-    if (attempt < maxRetries && !error) {
-      // Genuinely missing — no point retrying
-      break;
-    }
+    // Genuinely missing (no error, no detail) — no point retrying
+    break;
   }
 
   return null;
@@ -92,15 +92,10 @@ export async function findContactByEmail(
     if (contact) {
       if (!opts?.includeUnsubscribed && contact.unsubscribed) return null;
 
-      const { data: detail } = await resend.contacts.get(contact.id);
-      if (!detail) return null;
+      const result = await fetchContactWithRetry(resend, contact.id, contact.email, contact.unsubscribed);
+      if (!result) return null;
 
-      return {
-        id: contact.id,
-        email: contact.email,
-        properties: (detail.properties ?? {}) as unknown as Record<string, string>,
-        unsubscribed: contact.unsubscribed,
-      };
+      return result;
     }
 
     if (!data.has_more || !data.data.length) break;

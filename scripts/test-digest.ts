@@ -38,15 +38,15 @@ async function main() {
         if (!detail) return null;
         // Zod schema coerces every property to string — safe to call .toLowerCase, .split, etc.
         const props = contactPropertiesSchema.parse(detail.properties ?? {});
-        const kwStr = props["keywords"];
-        const authStr = props["auth_countries"];
+        const kwStr = props["keywords"] || "";
+        const authStr = props["auth_countries"] || "";
         return {
           id: c.id,
           email: c.email,
           keywords: kwStr.split(",").map((k) => k.trim().toLowerCase()).filter(Boolean),
-          remote: props["remote"].toLowerCase(),
-          location: props["location"].toLowerCase(),
-          timezone: props["timezone"].toUpperCase(),
+          remote: (props["remote"] || "").toLowerCase(),
+          location: (props["location"] || "").toLowerCase(),
+          timezone: (props["timezone"] || "").toUpperCase(),
           authCountries: authStr.split(",").map((s) => s.trim().toUpperCase()).filter(Boolean),
           hasUSVisa: authStr.toUpperCase().includes("US"),
         } satisfies Subscriber;

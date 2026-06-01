@@ -26,7 +26,15 @@ async function fetchContactWithRetry(
     if (detail) {
       // Zod schema coerces every property to string so downstream
       // calls (.toLowerCase, .split, .match, .replace) never crash.
-      const props = contactPropertiesSchema.parse(detail.properties ?? {});
+      // safeParse used to guard against non-object detail.properties (e.g. arrays).
+      const parsed = contactPropertiesSchema.safeParse(detail.properties ?? {});
+      if (!parsed.success) {
+        console.error(
+          `contactPropertiesSchema parse failed for ${id} (${email}):`,
+          parsed.error.flatten(),
+        );
+      }
+      const props = parsed.success ? parsed.data : ({} as Record<string, string>);
       return {
         id,
         email,

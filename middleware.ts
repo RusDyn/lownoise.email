@@ -16,7 +16,7 @@ export default async function proxy(request: NextRequest) {
     token: process.env.UPSTASH_REDIS_REST_TOKEN!,
   });
 
-  const key = `rate:subscribe:${ip}`;
+  const key = `rate:email:${ip}`;
   // Atomic INCR + EXPIRE-if-new: redis.eval runs a Lua script server-side,
   // preventing the key from becoming permanent if the process dies between two commands
   const luaScript = [
@@ -40,5 +40,5 @@ export default async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/api/subscribe", "/api/verify-email"],
+  matcher: ["/api/subscribe", "/api/verify-email", "/api/send-manage-link"],
 };

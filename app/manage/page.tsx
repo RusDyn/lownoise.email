@@ -1,8 +1,9 @@
-import { Resend } from "resend";
 import Link from "next/link";
 import { verifyManageToken } from "@/lib/auth";
+import { findContactByEmail } from "@/lib/contacts";
 import { STACK_VALUES } from "@/lib/form-options";
 import ManageForm from "@/app/components/ManageForm";
+import ManageLinkRequestForm from "@/app/components/ManageLinkRequestForm";
 import type { InitialPrefs } from "@/app/components/ManageForm";
 import type { Metadata } from "next";
 
@@ -11,43 +12,24 @@ export const metadata: Metadata = {
 };
 
 async function fetchContactPrefs(email: string): Promise<InitialPrefs | null> {
-  const resend = new Resend(process.env.RESEND_API_KEY);
-  const segmentId = process.env.RESEND_SEGMENT_ID;
-  if (!segmentId) return null;
+  const contact = await findContactByEmail(email, { includeUnsubscribed: true });
+  if (!contact) return null;
 
-  let after: string | undefined;
-  while (true) {
-    const { data, error } = await resend.contacts.list({
-      segmentId,
-      limit: 100,
-      ...(after ? { after } : {}),
-    });
-    if (error || !data) break;
-    const contact = data.data.find((c) => c.email === email);
-    if (contact) {
-      const { data: detail } = await resend.contacts.get(contact.id);
-      if (!detail) return null;
-      const props = (detail.properties ?? {}) as unknown as Record<string, string>;
-      const allKeywords = (props.keywords ?? "")
-        .split(",")
-        .map((k) => k.trim())
-        .filter(Boolean);
-      return {
-        stack: allKeywords.filter((k) => STACK_VALUES.has(k)),
-        keywords: allKeywords.filter((k) => !STACK_VALUES.has(k)),
-        remote: props.remote ?? "remote",
-        location: props.location ?? "",
-        timezone: props.timezone ?? "",
-        authCountries: (props.auth_countries ?? "")
-          .split(",")
-          .map((c) => c.trim().toUpperCase())
-          .filter(Boolean),
-      };
-    }
-    if (!data.has_more) break;
-    after = data.data.at(-1)?.id;
-  }
-  return null;
+  const allKeywords = (contact.properties.keywords ?? "")
+    .split(",")
+    .map((k) => k.trim())
+    .filter(Boolean);
+  return {
+    stack: allKeywords.filter((k) => STACK_VALUES.has(k)),
+    keywords: allKeywords.filter((k) => !STACK_VALUES.has(k)),
+    remote: contact.properties.remote ?? "remote",
+    location: contact.properties.location ?? "",
+    timezone: contact.properties.timezone ?? "",
+    authCountries: (contact.properties.auth_countries ?? "")
+      .split(",")
+      .map((c) => c.trim().toUpperCase())
+      .filter(Boolean),
+  };
 }
 
 export default async function ManagePage({
@@ -58,12 +40,12 @@ export default async function ManagePage({
   const { token, new: isNewParam } = await searchParams;
 
   if (!token) {
-    return <InvalidLink />;
+    return <RecoveryPage />;
   }
 
   const email = await verifyManageToken(token);
   if (!email) {
-    return <InvalidLink />;
+    return <RecoveryPage />;
   }
 
   const isNew = isNewParam === "1";
@@ -107,7 +89,7 @@ export default async function ManagePage({
   );
 }
 
-function InvalidLink() {
+function RecoveryPage() {
   return (
     <main className="wrap">
       <div className="topbar">
@@ -116,13 +98,19 @@ function InvalidLink() {
         </div>
       </div>
       <div className="form" style={{ marginTop: 32 }}>
-        <p className="error-msg" style={{ margin: 0 }}>
-          Invalid or expired manage link.
-        </p>
-        <p style={{ marginTop: 12, fontSize: 13 }}>
-          <Link href="/">← back to home</Link>
-        </p>
+        <ManageLinkRequestForm />
       </div>
+      <footer>
+        <div className="left">
+          <b>lownoise.email</b> · high-signal engineering jobs, low-effort search
+        </div>
+        <div className="right">
+          <Link href="/">home</Link>
+          <a href="/privacy">privacy</a>
+          <a href="/terms">terms</a>
+          <a href="mailto:hi@lownoise.email">contact</a>
+        </div>
+      </footer>
     </main>
   );
 }

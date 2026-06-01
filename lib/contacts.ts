@@ -8,6 +8,58 @@ export interface ResendContact {
 }
 
 /**
+ * Fetch a single contact with retry+backoff on 429 rate limits.
+ * Returns null only when the contact genuinely doesn't exist or retries are
+ * exhausted; logs transient errors so they surface in observability.
+ */
+async function fetchContactWithRetry(
+  resend: Resend,
+  id: string,
+  email: string,
+  unsubscribed: boolean,
+  maxRetries = 3,
+): Promise<ResendContact | null> {
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    const { data: detail, error } = await resend.contacts.get(id);
+
+    if (detail) {
+      return {
+        id,
+        email,
+        properties: (detail.properties ?? {}) as unknown as Record<string, string>,
+        unsubscribed,
+      };
+    }
+
+    if (error) {
+      const status = (error as { statusCode?: number }).statusCode;
+      const retryAfter = (error as { headers?: Record<string, string> }).headers?.["retry-after"];
+      console.error(
+        `resend.contacts.get failed for ${id} (attempt ${attempt + 1}/${maxRetries + 1}):`,
+        `status=${status ?? "unknown"} retryAfter=${retryAfter ?? "none"}`,
+        error,
+      );
+
+      if (status === 429 && attempt < maxRetries) {
+        const delay = retryAfter
+          ? parseInt(retryAfter, 10) * 1000
+          : Math.pow(2, attempt) * 1000;
+        await new Promise((r) => setTimeout(r, delay));
+        continue;
+      }
+    }
+
+    // Not found or non-retriable error
+    if (attempt < maxRetries && !error) {
+      // Genuinely missing — no point retrying
+      break;
+    }
+  }
+
+  return null;
+}
+
+/**
  * Paginate through a Resend segment to find a single contact by email.
  *
  * By default excludes unsubscribed contacts (matching the digest sender's
@@ -86,19 +138,23 @@ export async function listActiveContacts(): Promise<ResendContact[]> {
 
     const active = data.data.filter((c) => !c.unsubscribed);
 
-    const detailed = await Promise.all(
-      active.map(async (c) => {
-        const { data: detail } = await resend.contacts.get(c.id);
-        if (!detail) return null;
-
-        return {
-          id: c.id,
-          email: c.email,
-          properties: (detail.properties ?? {}) as unknown as Record<string, string>,
-          unsubscribed: c.unsubscribed,
-        } satisfies ResendContact;
-      }),
-    );
+    // Fetch details in batches of 4 to stay under Resend's 5 req/sec limit,
+    // with retry+backoff on 429s. Same pattern as send-digest process-contacts.
+    const detailed: (ResendContact | null)[] = [];
+    const batchSize = 4;
+    for (let i = 0; i < active.length; i += batchSize) {
+      const batch = active.slice(i, i + batchSize);
+      const results = await Promise.all(
+        batch.map(async (c) => {
+          const contact = await fetchContactWithRetry(resend, c.id, c.email, c.unsubscribed);
+          return contact;
+        }),
+      );
+      detailed.push(...results);
+      if (i + batchSize < active.length) {
+        await new Promise((r) => setTimeout(r, 1000));
+      }
+    }
 
     all.push(...detailed.filter((c): c is ResendContact => c !== null));
 

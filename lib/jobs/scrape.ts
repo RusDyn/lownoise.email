@@ -54,8 +54,9 @@ function isAshbyCompanyPage(url: string): boolean {
 // overhead is minimal (headers only in practice, since we abort after
 // the redirect chain resolves).
 async function resolveRedirects(url: string): Promise<string> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 10_000);
   try {
-    const controller = new AbortController();
     const res = await fetch(url, {
       method: "GET",
       redirect: "follow",
@@ -67,6 +68,8 @@ async function resolveRedirects(url: string): Promise<string> {
     return finalUrl;
   } catch {
     return url; // On error, return the original URL
+  } finally {
+    clearTimeout(timer);
   }
 }
 

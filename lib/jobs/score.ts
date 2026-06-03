@@ -1,5 +1,6 @@
 import type { StructuredJob, Subscriber } from "./types";
 import { expandAuthCountries, normalizeCode, parseUtcOffset } from "./normalize";
+import { isBannedDomain, isBannedCompany } from "./banlist";
 
 /** Approximate UTC offset ranges (in hours) for each geoScope. */
 const GEOSCOPE_TZ_RANGE: Partial<Record<string, [number, number]>> = {
@@ -84,6 +85,24 @@ export function filterAndRankJobs(jobs: StructuredJob[], subscriber: Subscriber)
   const authCodes = expandAuthCountries(subscriber.authCountries);
   return jobs
     .filter((job) => {
+      // Defense-in-depth: re-check banned domains at delivery time.
+      // The primary ban happens during ingestion (scrape-jobs dedup-filter),
+      // but pre-existing Redis entries, URL redirect edge cases, or bugs
+      // could let a banned job through. This gate ensures banned domains
+      // never reach a subscriber's digest, even if they're in storage.
+      if (isBannedDomain(job.url)) {
+        console.warn("send-digest: banned domain caught at delivery:", job.url);
+        return false;
+      }
+
+      // Also catch jobs whose apply URL hides behind a redirect wrapper
+      // (e.g. LinkedIn external-job tracker) but whose company name still
+      // matches a banned domain brand.
+      if (isBannedCompany(job.company)) {
+        console.warn("send-digest: banned company caught at delivery:", job.company, job.url);
+        return false;
+      }
+
       if (job.visaRequirement === "US" && !subscriber.hasUSVisa) return false;
       // "remote" subscribers only see remote-friendly jobs.
       // "hybrid" subscribers see hybrid and remote jobs; truly onsite jobs

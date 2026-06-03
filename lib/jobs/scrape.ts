@@ -45,28 +45,29 @@ function isAshbyCompanyPage(url: string): boolean {
 }
 
 // Follow HTTP redirects to resolve URL shorteners (click.appcast.io, lnkd.in,
-// etc.) to the final destination URL. Uses HEAD requests with manual redirect
-// handling so we don't download page bodies.
-async function resolveRedirects(url: string, maxHops = 5): Promise<string> {
-  let current = url;
-  for (let i = 0; i < maxHops; i++) {
-    try {
-      const res = await fetch(current, {
-        method: "HEAD",
-        redirect: "manual",
-        signal: AbortSignal.timeout(5_000),
-      });
-      const location = res.headers.get("location");
-      if (!location || res.status < 300 || res.status >= 400) {
-        return current;
-      }
-      // Resolve relative redirects against the current URL
-      current = new URL(location, current).href;
-    } catch {
-      return current; // On error, return the last known URL
-    }
+// LinkedIn external-job trackers, etc.) to the final destination URL.
+//
+// Uses GET with automatic redirect following — HEAD requests are commonly
+// blocked or return 200 with JS redirects (LinkedIn, Greenhouse, etc.),
+// which would silently fail to resolve. GET + redirect:"follow" handles
+// all standard 3xx redirects. We don't read the response body, so the
+// overhead is minimal (headers only in practice, since we abort after
+// the redirect chain resolves).
+async function resolveRedirects(url: string): Promise<string> {
+  try {
+    const controller = new AbortController();
+    const res = await fetch(url, {
+      method: "GET",
+      redirect: "follow",
+      signal: controller.signal,
+    });
+    const finalUrl = res.url;
+    // Cancel the body download — we only needed the resolved URL
+    controller.abort();
+    return finalUrl;
+  } catch {
+    return url; // On error, return the original URL
   }
-  return current;
 }
 
 // Strip ATS apply-form suffixes so we scrape the job listing, not the form page.

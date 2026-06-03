@@ -60,6 +60,23 @@ export function isBannedDomain(url: string): boolean {
 }
 
 /**
+ * Check whether a company name matches a known banned domain.
+ *
+ * This catches jobs where the apply URL is a redirect wrapper (e.g. LinkedIn's
+ * external-job tracker) that hides the real domain, but the structured company
+ * name extracted by DeepSeek still contains the banned brand name.
+ */
+export function isBannedCompany(company: string): boolean {
+  const lower = company.toLowerCase();
+  for (const domain of BANNED_DOMAINS) {
+    // Strip the TLD to get the brand: "micro1.ai" → "micro1"
+    const brand = domain.replace(/\.[^.]+$/, "");
+    if (brand.length >= 3 && lower.includes(brand)) return true;
+  }
+  return false;
+}
+
+/**
  * Run heuristic checks against a URL's domain to detect suspicious
  * job-aggregator patterns. Suspicious ≠ banned — these are flagged
  * for manual review. Once confirmed, add them to BANNED_DOMAINS.

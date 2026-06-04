@@ -20,6 +20,52 @@ scrape (Serper + Apify)
 
 Inngest orchestrates the pipeline with hourly scrape jobs and a daily digest send. Jobs run in batches of 5 with step memoization so failed runs replay safely without re-processing completed work.
 
+## Matchmaking
+
+Each subscriber's digest is built by a two-phase algorithm: **filter** (hard binary decisions) then **score** (0–100 ranking). Every score is deterministic and honest — suitable for public display.
+
+### Phase 1 — Filter
+
+Five hard gates remove definite non-matches. A job that fails any filter is discarded before scoring.
+
+| # | Filter | Rule |
+|---|--------|------|
+| 1 | **Banned** | Domain or company is on the ban list (known scam/spam domains). |
+| 2 | **Visa** | Job requires a US work visa and the subscriber doesn't have one. |
+| 3 | **Remote** | Subscriber requires remote but the job isn't remote-friendly; or subscriber is hybrid/onsite and the job is the opposite mode. |
+| 4 | **Location** | Job's location restrictions don't overlap with the subscriber's authorized work countries. |
+| 5 | **Relevance** | Subscriber has keywords but none appear in the job title or skills (body-only matches are too noisy to qualify). |
+
+### Phase 2 — Score
+
+Surviving jobs are scored 0–100 from seven components. Keyword-dependent components (skills, title, body) are penalized by a **coverage ratio**: if a subscriber lists 10 keywords and only 1 matches, those components get 10% of their value. This prevents jobs that barely overlap with your stack from crowding out better matches.
+
+| Component | Max | Description |
+|-----------|-----|-------------|
+| **GeoScope** | 20 | Global jobs get full credit; region-restricted jobs only score if the subscriber is authorized there. Uses a country→geoScope map (US, EU, UK, APAC, Other) — no false positives from substring matching. |
+| **Skill match** | 25 | Tiered diminishing returns: 1 match = 10, 2 = 18, 3 = 23, 4+ = 25. Matched against the subscriber's keyword list. |
+| **Title match** | 20 | Any subscriber keyword appears as a whole word in the job title (word-boundary matching). |
+| **Body match** | 10 | Any subscriber keyword appears in the job description body. |
+| **Salary** | 10 | Job lists a salary (any amount). Transparency signal. |
+| **Timezone** | 15 | How well the subscriber's timezone overlaps the job's geoScope typical hours. ≤3h offset = 10, ≤6h = 5, farther = 0. No timezone data → neutral 5. |
+| **Tiebreaker** | ~0.001 | Deterministic — derived from MD5(job URL). Same input always produces the same ranking. |
+
+**20 + 25 + 20 + 10 + 10 + 15 = 100**
+
+Jobs are sorted descending by score and the top 10 are delivered.
+
+### Example
+
+A subscriber with keywords `[backend, go, rust, kubernetes]` (remote, no location restrictions):
+
+| Job | Filter | Score | Why |
+|-----|--------|-------|-----|
+| Senior DevOps Engineer — Kubernetes | PASS | **35** | Only `kubernetes` matched → 25% coverage penalty on keyword components. Salary listed (+10). US geoScope but subscriber has no auth countries → neutral +10. |
+| Senior Backend Engineer | PASS | **33** | `backend` in title → 25% coverage. Global geoScope (+20) but no salary listed. |
+| Middle DevOps Engineer (Poland) | FILTERED | — | Relevance gate: subscriber has 4 keywords but none match title or skills of this DevOps posting. |
+
+Scores are intentionally conservative. A 35/100 is a real match — the job is relevant and the subscriber should see it. But the score honestly reflects that 3 of 4 keywords didn't match, keeping the digest low-noise.
+
 ## Stack
 
 - **Next.js 16** — landing page + API routes

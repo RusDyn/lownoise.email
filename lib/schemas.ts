@@ -9,7 +9,13 @@ import { z } from "zod";
  * a property that should have been a string arrives as something else.
  */
 const coerceString = z.preprocess(
-  (val): string => (typeof val === "string" ? val : ""),
+  (val): string => {
+    if (typeof val === "string") return val;
+    // Resend returns properties as {value: "actual", type: "string"} objects
+    if (val && typeof val === "object" && "value" in val && typeof (val as Record<string, unknown>).value === "string")
+      return (val as { value: string }).value;
+    return "";
+  },
   z.string(),
 );
 

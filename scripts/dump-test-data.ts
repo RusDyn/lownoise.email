@@ -81,17 +81,29 @@ async function main() {
   const seenRemote: Set<string> = new Set();
   const seenKeywordCount: Set<string> = new Set(); // "narrow"(1-3), "medium"(4-7), "broad"(8+)
 
+  const seenDiversity: Set<string> = new Set();
+
+  // First pass: enforce diversity across remote pref, keyword breadth, and auth
+  // country count. Skip subs whose diversityKey is already represented.
   for (const sub of allSubs) {
     if (pickedSubs.length >= 5) break;
 
     const kwBucket = sub.keywords.length <= 3 ? "narrow" : sub.keywords.length <= 7 ? "medium" : "broad";
     const authBucket = sub.authCountries.length === 0 ? "none" : sub.authCountries.length <= 2 ? "few" : "many";
 
-    // Prefer diversity
     const diversityKey = `${sub.remote}|${kwBucket}|${authBucket}`;
-    if (pickedSubs.length < 5) {
-      pickedSubs.push(sub);
-    }
+    if (seenDiversity.has(diversityKey)) continue;
+
+    seenDiversity.add(diversityKey);
+    seenRemote.add(sub.remote);
+    seenKeywordCount.add(kwBucket);
+    pickedSubs.push(sub);
+  }
+
+  // Second pass: fill remaining slots without diversity constraint
+  for (const sub of allSubs) {
+    if (pickedSubs.length >= 5) break;
+    if (!pickedSubs.includes(sub)) pickedSubs.push(sub);
   }
 
   console.error(`Selected ${pickedSubs.length} diverse subscribers`);

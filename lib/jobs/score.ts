@@ -49,11 +49,17 @@ export function filterReason(
   if (subscriber.remote === "hybrid" && job.workMode === "onsite" && !job.isRemoteFriendly) return "remote";
   if (subscriber.remote === "onsite" && job.workMode === "remote") return "remote";
 
-  // Filter 4: Location restriction mismatch
+  // Filter 4: Location restriction mismatch.
+  // Normalize then expand each restriction code (so "EU" expands to member
+  // countries) to get a flat list, then check for overlap with authCodes
+  // (which are already expanded).
+  const expandedRestrictions = job.locationRestriction.flatMap((c) =>
+    expandAuthCountries([normalizeCode(c)]),
+  );
   if (
     job.locationRestriction.length > 0 &&
     authCodes.length > 0 &&
-    !job.locationRestriction.some((c) => authCodes.includes(normalizeCode(c)))
+    !expandedRestrictions.some((c) => authCodes.includes(c))
   ) {
     return "location";
   }
@@ -174,14 +180,15 @@ export function timezoneScore(job: StructuredJob, subscriber: Subscriber): numbe
 }
 
 /**
- * Deterministic tiebreaker — 0 to ~0.001.
+ * Deterministic tiebreaker — 0 to ~0.01.
  *
  * Derived from the MD5 hash of the job URL. Same URL always produces the
- * same sub-0.001 value, making rankings deterministic across runs.
+ * same value, making rankings deterministic across runs. The 0.01 scale
+ * survives the 2-decimal rounding applied in scoreJob.
  */
 export function tiebreaker(job: StructuredJob): number {
   const hex = createHash("md5").update(job.url).digest("hex").slice(0, 4);
-  return (parseInt(hex, 16) / 0xffff) * 0.001;
+  return (parseInt(hex, 16) / 0xffff) * 0.01;
 }
 
 /**

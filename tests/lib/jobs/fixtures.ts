@@ -1,0 +1,292 @@
+import type { StructuredJob, Subscriber } from "@/lib/jobs/types";
+
+// ── 3 real subscribers from Resend (emails anonymized) ─────────────────────
+
+export const SUB1_BROAD_FS: Subscriber = {
+  id: "test-sub-1",
+  email: "sub1@test.invalid",
+  keywords: [
+    "typescript", "postgresql", "terraform", "react", "aws",
+    "javascript", "kubernetes", "cloud", "ci/cd", "python",
+  ],
+  remote: "remote",
+  location: "nigeria",
+  timezone: "",
+  authCountries: ["US", "CA", "UK", "PT", "NL", "AU", "DE", "PL", "FR", "UA", "IE", "SE", "IN", "BR", "SG"],
+  hasUSVisa: true,
+};
+
+export const SUB2_DEVOPS_IL: Subscriber = {
+  id: "test-sub-2",
+  email: "sub2@test.invalid",
+  keywords: ["devops"],
+  remote: "hybrid",
+  location: "israel",
+  timezone: "",
+  authCountries: ["IL"],
+  hasUSVisa: false,
+};
+
+export const SUB3_GO_RUST: Subscriber = {
+  id: "test-sub-3",
+  email: "sub3@test.invalid",
+  keywords: ["backend", "go", "rust", "kubernetes"],
+  remote: "remote",
+  location: "",
+  timezone: "",
+  authCountries: [],
+  hasUSVisa: false,
+};
+
+export const ALL_SUBSCRIBERS: Record<string, Subscriber> = {
+  SUB1: SUB1_BROAD_FS,
+  SUB2: SUB2_DEVOPS_IL,
+  SUB3: SUB3_GO_RUST,
+};
+
+// ── 5 real jobs from Redis (hand-picked for scoring coverage) ─────────────
+
+export const J1_DEVOPS_INFRA: StructuredJob = {
+  url: "https://jobs.ashbyhq.com/zeely/1",
+  title: "Senior DevOps Engineer (Infrastructure)",
+  company: "Zeely Inc.",
+  city: "Remote",
+  country: "Worldwide",
+  workMode: "remote",
+  geoScope: "global",
+  employmentType: "full-time",
+  salaryMin: 0,
+  salaryMax: 0,
+  salaryCurrency: "",
+  salaryPeriod: "",
+  visaSponsorship: false,
+  visaRequirement: "",
+  locationRestriction: [],
+  seniority: "senior",
+  skills: ["AWS", "Terraform", "Kubernetes", "GCP", "Linux", "CI/CD"],
+  isRemoteFriendly: true,
+  equityOffered: false,
+  scrapedAt: 1700000000,
+  source: "ashby",
+  body: "Senior DevOps Engineer role. Build and maintain cloud infrastructure using AWS, Terraform, and Kubernetes. Work with CI/CD pipelines and GCP deployments.",
+};
+
+export const J2_BACKEND: StructuredJob = {
+  url: "https://jobs.ashbyhq.com/welltech/2",
+  title: "Senior Backend Engineer",
+  company: "Welltech",
+  city: "Remote",
+  country: "Worldwide",
+  workMode: "remote",
+  geoScope: "global",
+  employmentType: "full-time",
+  salaryMin: 0,
+  salaryMax: 0,
+  salaryCurrency: "",
+  salaryPeriod: "",
+  visaSponsorship: false,
+  visaRequirement: "",
+  locationRestriction: [],
+  seniority: "senior",
+  skills: ["Python", "Kotlin", "Domain Driven Design", "AWS", "Lambda", "API Gateway"],
+  isRemoteFriendly: true,
+  equityOffered: false,
+  scrapedAt: 1700000000,
+  source: "ashby",
+  body: "Senior Backend Engineer building distributed systems with Python and Kotlin. Deploy on AWS Lambda and API Gateway with a focus on domain-driven design.",
+};
+
+export const J3_K8S_US: StructuredJob = {
+  url: "https://jobs.ashbyhq.com/element84/3",
+  title: "Senior DevOps Engineer - Kubernetes Focused",
+  company: "Element 84",
+  city: "Remote",
+  country: "United States",
+  workMode: "remote",
+  geoScope: "us",
+  employmentType: "full-time",
+  salaryMin: 145000,
+  salaryMax: 180000,
+  salaryCurrency: "USD",
+  salaryPeriod: "year",
+  visaSponsorship: false,
+  visaRequirement: "",
+  locationRestriction: ["US"],
+  seniority: "senior",
+  skills: ["Kubernetes", "AWS", "Helm", "EKS", "Linux", "GitOps"],
+  isRemoteFriendly: true,
+  equityOffered: false,
+  scrapedAt: 1700000000,
+  source: "ashby",
+  body: "Senior DevOps Engineer focused on Kubernetes. Manage EKS clusters, write Helm charts, and implement GitOps workflows on AWS.",
+};
+
+export const J4_DEVOPS_PL: StructuredJob = {
+  url: "https://jobs.ashbyhq.com/akvelon/4",
+  title: "Middle+ DevOps Engineer (Poland/Serbia)",
+  company: "Akvelon",
+  city: "Remote",
+  country: "Poland",
+  workMode: "remote",
+  geoScope: "eu",
+  employmentType: "full-time",
+  salaryMin: 0,
+  salaryMax: 0,
+  salaryCurrency: "",
+  salaryPeriod: "",
+  visaSponsorship: false,
+  visaRequirement: "",
+  locationRestriction: ["PL", "RS", "HR", "PT"],
+  seniority: "mid",
+  skills: ["Linux", "CI/CD", "GitHub Actions", "Azure Pipelines", "Bash", "PowerShell"],
+  isRemoteFriendly: true,
+  equityOffered: false,
+  scrapedAt: 1700000000,
+  source: "ashby",
+  body: "Middle+ DevOps Engineer managing CI/CD pipelines with GitHub Actions and Azure Pipelines. Linux administration and Bash scripting.",
+};
+
+export const J5_BACKEND_EU: StructuredJob = {
+  url: "https://jobs.ashbyhq.com/airapps/5",
+  title: "Backend Engineer",
+  company: "Air Apps",
+  city: "Remote",
+  country: "Europe",
+  workMode: "remote",
+  geoScope: "eu",
+  employmentType: "full-time",
+  salaryMin: 52000,
+  salaryMax: 70000,
+  salaryCurrency: "EUR",
+  salaryPeriod: "year",
+  visaSponsorship: false,
+  visaRequirement: "",
+  locationRestriction: [],
+  seniority: "mid",
+  skills: ["Node.js", "TypeScript", "PostgreSQL", "Supabase", "Google Cloud Platform", "REST API"],
+  isRemoteFriendly: true,
+  equityOffered: false,
+  scrapedAt: 1700000000,
+  source: "ashby",
+  body: "Backend Engineer building REST APIs with Node.js and TypeScript. PostgreSQL on Supabase, deployed to Google Cloud Platform.",
+};
+
+export const ALL_JOBS: Record<string, StructuredJob> = {
+  J1: J1_DEVOPS_INFRA,
+  J2: J2_BACKEND,
+  J3: J3_K8S_US,
+  J4: J4_DEVOPS_PL,
+  J5: J5_BACKEND_EU,
+};
+
+export const JOB_LIST = Object.values(ALL_JOBS);
+
+// ── Edge-case fixtures (ported from scripts/test-filters.ts) ──────────────
+
+export const ONSITE_BUT_REMOTE_FRIENDLY: StructuredJob = {
+  url: "https://example.com/onsite-friendly",
+  title: "Onsite-but-Friendly DevOps",
+  company: "TestCo",
+  city: "Tel Aviv",
+  country: "Israel",
+  workMode: "onsite",
+  geoScope: "other",
+  employmentType: "full-time",
+  salaryMin: 0,
+  salaryMax: 0,
+  salaryCurrency: "",
+  salaryPeriod: "",
+  visaSponsorship: false,
+  visaRequirement: "",
+  locationRestriction: [],
+  seniority: "mid",
+  skills: ["devops"],
+  isRemoteFriendly: true,
+  equityOffered: false,
+  scrapedAt: 1700000000,
+  source: "other",
+  body: "DevOps engineer role.",
+};
+
+export const BODY_ONLY_MATCH: StructuredJob = {
+  url: "https://example.com/body-only",
+  title: "Head of Claims",
+  company: "TestCo",
+  city: "Tel Aviv",
+  country: "Israel",
+  workMode: "hybrid",
+  geoScope: "other",
+  employmentType: "full-time",
+  salaryMin: 0,
+  salaryMax: 0,
+  salaryCurrency: "",
+  salaryPeriod: "",
+  visaSponsorship: false,
+  visaRequirement: "",
+  locationRestriction: [],
+  seniority: "mid",
+  skills: ["insurance", "claims"],
+  isRemoteFriendly: false,
+  equityOffered: false,
+  scrapedAt: 1700000000,
+  source: "other",
+  body: "Work with our DevOps team to streamline claim processing.",
+};
+
+export const NO_KEYWORD_MATCH: StructuredJob = {
+  url: "https://example.com/no-match",
+  title: "AI Engineer",
+  company: "TestCo",
+  city: "Tel Aviv",
+  country: "Israel",
+  workMode: "hybrid",
+  geoScope: "other",
+  employmentType: "full-time",
+  salaryMin: 0,
+  salaryMax: 0,
+  salaryCurrency: "",
+  salaryPeriod: "",
+  visaSponsorship: false,
+  visaRequirement: "",
+  locationRestriction: [],
+  seniority: "mid",
+  skills: ["python", "pytorch", "ml"],
+  isRemoteFriendly: false,
+  equityOffered: false,
+  scrapedAt: 1700000000,
+  source: "other",
+  body: "Build machine learning models for fraud detection.",
+};
+
+export const ISRAEL_HYBRID: Subscriber = {
+  id: "test-il-hybrid",
+  email: "test@test.invalid",
+  keywords: ["devops"],
+  remote: "hybrid",
+  location: "israel",
+  timezone: "",
+  authCountries: ["IL"],
+  hasUSVisa: false,
+};
+
+export const ISRAEL_REMOTE: Subscriber = {
+  id: "test-il-remote",
+  email: "test-remote@test.invalid",
+  keywords: ["devops"],
+  remote: "remote",
+  location: "israel",
+  timezone: "",
+  authCountries: ["IL"],
+  hasUSVisa: false,
+};
+
+export const ISRAEL_ONSITE: Subscriber = {
+  id: "test-il-onsite",
+  email: "test-onsite@test.invalid",
+  keywords: ["devops"],
+  remote: "onsite",
+  location: "israel",
+  timezone: "",
+  authCountries: ["IL"],
+  hasUSVisa: false,
+};

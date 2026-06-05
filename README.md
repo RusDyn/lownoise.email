@@ -94,7 +94,9 @@ Create a `.env.local` file with the following:
 ```env
 # Resend (email delivery)
 RESEND_API_KEY=
-RESEND_SEGMENT_ID=        # segment ID from Resend dashboard → Segments
+RESEND_SEGMENT_ID=             # subscriber audience segment ID from Resend dashboard -> Segments
+RESEND_DAILY_SEND_SEGMENT_ID=  # transient send segment for daily digest broadcasts
+RESEND_HOURLY_SEND_SEGMENT_ID= # transient send segment for hourly premium broadcasts
 
 # Inngest (job orchestration)
 INNGEST_EVENT_KEY=

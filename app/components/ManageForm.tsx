@@ -17,6 +17,7 @@ export interface InitialPrefs {
   location: string;
   timezone: string;
   authCountries: string[];
+  dailySendHourUtc: string;
 }
 
 interface ManageFormProps {
@@ -34,6 +35,7 @@ export default function ManageForm({ token, isNew, initialPrefs }: ManageFormPro
   const [remote, setRemote] = useState(initialPrefs?.remote ?? "remote");
   const [authCountries, setAuthCountries] = useState<string[]>(initialPrefs?.authCountries ?? []);
   const [timezone, setTimezone] = useState(initialPrefs?.timezone ?? "");
+  const [dailySendHourUtc, setDailySendHourUtc] = useState(initialPrefs?.dailySendHourUtc ?? "16");
   const [submitting, setSubmitting] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -72,6 +74,7 @@ export default function ManageForm({ token, isNew, initialPrefs }: ManageFormPro
           location,
           timezone,
           authCountries: finalAuthCountries,
+          dailySendHourUtc,
         }),
       });
       const data = await res.json();
@@ -200,6 +203,24 @@ export default function ManageForm({ token, isNew, initialPrefs }: ManageFormPro
             ))}
           </datalist>
           <div className="helper">Used to prioritize jobs whose region overlaps your working hours.</div>
+        </div>
+
+        <div className="field">
+          <label className="label" htmlFor="daily-send-hour">
+            daily digest hour
+          </label>
+          <select
+            id="daily-send-hour"
+            name="dailySendHourUtc"
+            value={dailySendHourUtc}
+            onChange={(e) => setDailySendHourUtc(e.target.value)}
+          >
+            {Array.from({ length: 24 }, (_, hour) => (
+              <option key={hour} value={String(hour)}>
+                {String(hour).padStart(2, "0")}:00 UTC
+              </option>
+            ))}
+          </select>
         </div>
 
         <div className="field">

@@ -42,4 +42,7 @@ export interface Subscriber {
   timezone: string;
   authCountries: string[];
   hasUSVisa: boolean;
+  dailySendHourUtc?: string;
+  premium?: string;
+  hourly?: string;
 }

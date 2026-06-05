@@ -1,4 +1,4 @@
-import { getAllCountries } from "countries-and-timezones";
+import { getAllCountries, type CountryCode } from "countries-and-timezones";
 import { euMember } from "is-european";
 
 // UI stores "UK"; ISO 3166-1 alpha-2 uses "GB" — job locationRestriction may use either
@@ -21,6 +21,10 @@ const COUNTRY_NAME_TO_CODE = new Map(
   Object.entries(ALL_COUNTRIES).map(([code, country]) => [country.name.toLowerCase(), code]),
 );
 const AMBIGUOUS_TWO_LETTER_WORDS = new Set(["am", "as", "at", "be", "by", "do", "go", "he", "if", "in", "is", "it", "me", "my", "no", "of", "on", "or", "so", "to", "up", "us", "we"]);
+
+function isCountryCode(code: string): code is CountryCode {
+  return Object.hasOwn(ALL_COUNTRIES, code);
+}
 
 /** Normalize a single country code: trim, uppercase, resolve UK→GB alias */
 export function normalizeCode(code: string): string {
@@ -46,7 +50,7 @@ export function inferCountryCodes(text: string): string[] {
   for (const token of tokens) {
     if (/^[a-z]{2}$/.test(token) && !AMBIGUOUS_TWO_LETTER_WORDS.has(token)) {
       const code = normalizeCode(token);
-      if (ALL_COUNTRIES[code]) codes.add(code);
+      if (isCountryCode(code)) codes.add(code);
     }
     if (COUNTRY_TEXT_ALIASES[token]) codes.add(COUNTRY_TEXT_ALIASES[token]);
   }

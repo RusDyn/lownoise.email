@@ -1,6 +1,6 @@
 import { createHash } from "crypto";
 import type { StructuredJob, Subscriber } from "./types";
-import { expandAuthCountries, normalizeCode, parseUtcOffset } from "./normalize";
+import { expandAuthCountries, inferCountryCodes, normalizeCode, parseUtcOffset } from "./normalize";
 import { isBannedDomain, isBannedCompany } from "./banlist";
 import { getGeoRegions } from "./geo";
 
@@ -24,6 +24,23 @@ function wordMatch(text: string, kw: string): boolean {
   return new RegExp(`\\b${kw.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`).test(text);
 }
 
+function overlaps(a: string[], b: string[]): boolean {
+  return a.some((value) => b.includes(value));
+}
+
+function subscriberLocationCodes(subscriber: Subscriber, authCodes: string[]): string[] {
+  return [...new Set([...authCodes, ...inferCountryCodes(subscriber.location)])];
+}
+
+function jobLocationCodes(job: StructuredJob): string[] {
+  return [
+    ...new Set([
+      ...job.locationRestriction.flatMap((c) => expandAuthCountries([normalizeCode(c)])),
+      ...inferCountryCodes(`${job.city} ${job.country}`),
+    ]),
+  ];
+}
+
 // ── Phase 1: Filter (hard binary decisions) ───────────────────────────────
 
 /**
@@ -45,6 +62,7 @@ export function filterReason(
   if (job.visaRequirement === "US" && !subscriber.hasUSVisa) return "visa";
 
   // Filter 3: Remote/work-mode mismatch
+  if (subscriber.remote === "remote" && job.workMode !== "remote") return "remote";
   if (subscriber.remote === "remote" && !job.isRemoteFriendly) return "remote";
   if (subscriber.remote === "hybrid" && job.workMode === "onsite" && !job.isRemoteFriendly) return "remote";
   if (subscriber.remote === "onsite" && job.workMode === "remote") return "remote";
@@ -59,7 +77,18 @@ export function filterReason(
   if (
     job.locationRestriction.length > 0 &&
     authCodes.length > 0 &&
-    !expandedRestrictions.some((c) => authCodes.includes(c))
+    !overlaps(expandedRestrictions, authCodes)
+  ) {
+    return "location";
+  }
+
+  const subscriberCodes = subscriberLocationCodes(subscriber, authCodes);
+  const jobCodes = jobLocationCodes(job);
+  if (
+    job.workMode !== "remote" &&
+    subscriberCodes.length > 0 &&
+    jobCodes.length > 0 &&
+    !overlaps(jobCodes, subscriberCodes)
   ) {
     return "location";
   }

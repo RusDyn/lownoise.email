@@ -30,6 +30,8 @@ import {
   ONSITE_BUT_REMOTE_FRIENDLY,
   BODY_ONLY_MATCH,
   NO_KEYWORD_MATCH,
+  PORTUGAL_REMOTE_SDK,
+  HAMBURG_HYBRID_SDK,
 } from "./fixtures";
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -349,13 +351,13 @@ describe("edge cases (ported from test-filters.ts)", () => {
       expect(reason).toBeNull();
     });
 
-    it("remote subscriber: onsite+remoteFriendly job passes (isRemoteFriendly wins)", () => {
+    it("remote subscriber: onsite+remoteFriendly job is rejected", () => {
       const reason = filterReason(
         ONSITE_BUT_REMOTE_FRIENDLY,
         ISRAEL_REMOTE,
         authCodes(ISRAEL_REMOTE),
       );
-      expect(reason).toBeNull();
+      expect(reason).toBe("remote");
     });
 
     it("onsite subscriber: onsite+remoteFriendly job passes", () => {
@@ -414,6 +416,25 @@ describe("edge cases (ported from test-filters.ts)", () => {
       // bodyOnlyMatch and noKeywordMatch should be filtered
       expect(titles).not.toContain("Head of Claims");
       expect(titles).not.toContain("AI Engineer");
+    });
+  });
+
+  describe("location-bound hybrid jobs", () => {
+    it("remote/PT subscriber does not get a Hamburg hybrid SDK role", () => {
+      expect(filterReason(
+        HAMBURG_HYBRID_SDK,
+        PORTUGAL_REMOTE_SDK,
+        authCodes(PORTUGAL_REMOTE_SDK),
+      )).toBe("remote");
+    });
+
+    it("hybrid/PT subscriber does not get a Hamburg hybrid SDK role", () => {
+      const portugalHybrid = { ...PORTUGAL_REMOTE_SDK, remote: "hybrid" };
+      expect(filterReason(
+        HAMBURG_HYBRID_SDK,
+        portugalHybrid,
+        authCodes(portugalHybrid),
+      )).toBe("location");
     });
   });
 });

@@ -6,7 +6,7 @@ import { isBannedDomain, detectSuspiciousDomain } from "@/lib/jobs/banlist";
 import type { RawJob } from "@/lib/jobs/types";
 
 export const scrapeJobs = inngest.createFunction(
-  { id: "scrape-jobs", name: "Scrape Jobs", triggers: [{ cron: "0 * * * *" }] },
+  { id: "scrape-jobs", name: "Scrape Jobs", triggers: [{ cron: "50 * * * *" }] },
   async ({ step }) => {
     // Step 1: Scrape all sources in parallel
     const scraped = await step.run("scrape-sources", async () => {

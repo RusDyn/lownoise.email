@@ -12,6 +12,7 @@ interface ManageBody {
   location: string;
   timezone: string;
   authCountries: string[];
+  dailySendHourUtc: string | number;
 }
 
 async function findContactByEmail(resend: Resend, segmentId: string, email: string) {
@@ -39,7 +40,16 @@ export async function POST(req: Request) {
     return Response.json({ error: "invalid request body" }, { status: 400 });
   }
 
-  const { token, stack = [], keywords = [], remote = "", location = "", timezone = "", authCountries = [] } = body;
+  const {
+    token,
+    stack = [],
+    keywords = [],
+    remote = "",
+    location = "",
+    timezone = "",
+    authCountries = [],
+    dailySendHourUtc = "16",
+  } = body;
 
   if (!token) {
     return Response.json({ error: "missing token" }, { status: 400 });
@@ -54,6 +64,13 @@ export async function POST(req: Request) {
     return Response.json({ error: "invalid field types" }, { status: 400 });
   }
 
+  const dailySendHour =
+    typeof dailySendHourUtc === "number" && Number.isInteger(dailySendHourUtc)
+      ? dailySendHourUtc
+      : typeof dailySendHourUtc === "string" && /^\d{1,2}$/.test(dailySendHourUtc.trim())
+        ? Number(dailySendHourUtc.trim())
+        : NaN;
+
   if (stack.length > 20 || keywords.length > 12 || authCountries.length > 30) {
     return Response.json({ error: "too many values" }, { status: 400 });
   }
@@ -62,6 +79,7 @@ export async function POST(req: Request) {
     typeof location !== "string" || location.length > 200 ||
     typeof timezone !== "string" || timezone.length > 20 ||
     typeof remote !== "string" || !["remote", "hybrid", "onsite"].includes(remote) ||
+    !Number.isInteger(dailySendHour) || dailySendHour < 0 || dailySendHour > 23 ||
     stack.some((s) => typeof s !== "string" || s.length > 100) ||
     keywords.some((k) => typeof k !== "string" || k.length > 100) ||
     authCountries.some((c) => typeof c !== "string" || c.length > 10)
@@ -87,6 +105,7 @@ export async function POST(req: Request) {
     location,
     timezone,
     auth_countries: authCountries.join(","),
+    daily_send_hour_utc: String(dailySendHour),
   };
 
   const existing = await findContactByEmail(resend, segmentId, email);

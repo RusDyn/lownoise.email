@@ -2,6 +2,7 @@ import Link from "next/link";
 import { verifyManageToken } from "@/lib/auth";
 import { findContactByEmail } from "@/lib/contacts";
 import { STACK_VALUES } from "@/lib/form-options";
+import { normalizeDailySendHourUtc } from "@/lib/email/digest-send";
 import ManageForm from "@/app/components/ManageForm";
 import ManageLinkRequestForm from "@/app/components/ManageLinkRequestForm";
 import type { InitialPrefs } from "@/app/components/ManageForm";
@@ -29,6 +30,7 @@ async function fetchContactPrefs(email: string): Promise<InitialPrefs | null> {
       .split(",")
       .map((c) => c.trim().toUpperCase())
       .filter(Boolean),
+    dailySendHourUtc: normalizeDailySendHourUtc(contact.properties.daily_send_hour_utc),
   };
 }
 

@@ -442,7 +442,8 @@ form {
 }
 
 input[type="email"],
-.field > input[type="text"] {
+.field > input[type="text"],
+.field > select {
   width: 100%;
   font: inherit;
   font-size: 15px;
@@ -461,7 +462,8 @@ input[type="email"]::placeholder,
   color: var(--ink-3);
 }
 input[type="email"]:focus,
-.field > input[type="text"]:focus {
+.field > input[type="text"]:focus,
+.field > select:focus {
   border-color: var(--accent);
   box-shadow: 0 0 0 3px color-mix(in oklab, var(--accent) 25%, transparent);
 }

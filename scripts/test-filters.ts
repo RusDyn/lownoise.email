@@ -154,8 +154,8 @@ const noKeywordMatch = makeJob({
   body: "Build machine learning models for fraud detection.",
 });
 
-// Onsite job that the LLM contradictorily marked remote-friendly —
-// should pass for hybrid (isRemoteFriendly wins over workMode)
+// Onsite job that the LLM contradictorily marked remote-friendly.
+// Hybrid/onsite subscribers can see it when local; remote subscribers should not.
 const onsiteButRemoteFriendly = makeJob({
   url: "https://example.com/onsite-friendly",
   title: "Onsite-but-Friendly DevOps",
@@ -215,7 +215,7 @@ assert(!hybridUrls.has(bodyOnlyMatch.url), "hybrid: body-only match filtered by 
 // Must NOT pass: no keyword match at all
 assert(!hybridUrls.has(noKeywordMatch.url), "hybrid: no-keyword job filtered by relevance gate");
 
-// Must pass: onsite workMode but isRemoteFriendly=true (isRemoteFriendly wins)
+// Must pass: local onsite workMode but isRemoteFriendly=true
 assert(hybridUrls.has(onsiteButRemoteFriendly.url), "hybrid: onsite+remote-friendly job passes");
 
 // ── Section 2: Onsite subscriber ──────────────────────────────────────────────
@@ -273,8 +273,8 @@ assert(!remoteUrls.has(bodyOnlyMatch.url), "remote: body-only match filtered");
 // Must NOT pass: no keyword match
 assert(!remoteUrls.has(noKeywordMatch.url), "remote: no-keyword job filtered");
 
-// Must pass: onsite+remote-friendly (isRemoteFriendly=true)
-assert(remoteUrls.has(onsiteButRemoteFriendly.url), "remote: onsite+remote-friendly job passes");
+// Must NOT pass: remote subscribers should not receive onsite/hybrid roles
+assert(!remoteUrls.has(onsiteButRemoteFriendly.url), "remote: onsite+remote-friendly job blocked");
 
 // ── Result ────────────────────────────────────────────────────────────────────
 console.log(`\n${failures === 0 ? "✓ All assertions passed" : `✗ ${failures} assertion(s) failed`}`);

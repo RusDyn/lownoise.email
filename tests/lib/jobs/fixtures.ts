@@ -38,6 +38,17 @@ export const SUB3_GO_RUST: Subscriber = {
   hasUSVisa: false,
 };
 
+export const PORTUGAL_REMOTE_SDK: Subscriber = {
+  id: "a8bdfde4-1ee2-4d68-9ae0-0e4ff6634687",
+  email: "pt-remote@test.invalid",
+  keywords: ["sdk", "mobile"],
+  remote: "remote",
+  location: "remote/pt",
+  timezone: "",
+  authCountries: ["PT"],
+  hasUSVisa: false,
+};
+
 export const ALL_SUBSCRIBERS: Record<string, Subscriber> = {
   SUB1: SUB1_BROAD_FS,
   SUB2: SUB2_DEVOPS_IL,
@@ -256,6 +267,31 @@ export const NO_KEYWORD_MATCH: StructuredJob = {
   scrapedAt: 1700000000,
   source: "other",
   body: "Build machine learning models for fraud detection.",
+};
+
+export const HAMBURG_HYBRID_SDK: StructuredJob = {
+  url: "https://example.com/hamburg-sdk",
+  title: "Mobile Software Engineer (SDK) (f/m/d)",
+  company: "justtrack",
+  city: "Hamburg",
+  country: "Germany",
+  workMode: "hybrid",
+  geoScope: "eu",
+  employmentType: "full-time",
+  salaryMin: 0,
+  salaryMax: 0,
+  salaryCurrency: "",
+  salaryPeriod: "",
+  visaSponsorship: false,
+  visaRequirement: "",
+  locationRestriction: [],
+  seniority: "unknown",
+  skills: ["Mobile", "SDK", "Android", "iOS"],
+  isRemoteFriendly: true,
+  equityOffered: false,
+  scrapedAt: 1700000000,
+  source: "ashby",
+  body: "Mobile Software Engineer SDK role in Hamburg. Location Type Hybrid.",
 };
 
 export const ISRAEL_HYBRID: Subscriber = {

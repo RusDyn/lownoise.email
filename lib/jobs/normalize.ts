@@ -3,9 +3,24 @@ import { euMember } from "is-european";
 
 // UI stores "UK"; ISO 3166-1 alpha-2 uses "GB" — job locationRestriction may use either
 const ALIAS_MAP: Record<string, string> = { UK: "GB" };
+const COUNTRY_TEXT_ALIASES: Record<string, string> = {
+  uk: "GB",
+  "united kingdom": "GB",
+  usa: "US",
+  "u.s.a": "US",
+  "u.s.": "US",
+  us: "US",
+  "united states": "US",
+  "united states of america": "US",
+};
 
 // Derived at module load — all 27 EU member alpha-2 codes
-const EU_CODES: string[] = Object.keys(getAllCountries()).filter((c) => euMember(c));
+const ALL_COUNTRIES = getAllCountries();
+const EU_CODES: string[] = Object.keys(ALL_COUNTRIES).filter((c) => euMember(c));
+const COUNTRY_NAME_TO_CODE = new Map(
+  Object.entries(ALL_COUNTRIES).map(([code, country]) => [country.name.toLowerCase(), code]),
+);
+const AMBIGUOUS_TWO_LETTER_WORDS = new Set(["am", "as", "at", "be", "by", "do", "go", "he", "if", "in", "is", "it", "me", "my", "no", "of", "on", "or", "so", "to", "up", "us", "we"]);
 
 /** Normalize a single country code: trim, uppercase, resolve UK→GB alias */
 export function normalizeCode(code: string): string {
@@ -19,6 +34,36 @@ export function expandAuthCountries(codes: string[]): string[] {
     result = result.filter((c) => c !== "EU").concat(EU_CODES);
   }
   return [...new Set(result)];
+}
+
+export function inferCountryCodes(text: string): string[] {
+  if (typeof text !== "string" || text.trim() === "") return [];
+
+  const lower = text.toLowerCase();
+  const codes = new Set<string>();
+  const tokens = lower.split(/[^a-z]+/).filter(Boolean);
+
+  for (const token of tokens) {
+    if (/^[a-z]{2}$/.test(token) && !AMBIGUOUS_TWO_LETTER_WORDS.has(token)) {
+      const code = normalizeCode(token);
+      if (ALL_COUNTRIES[code]) codes.add(code);
+    }
+    if (COUNTRY_TEXT_ALIASES[token]) codes.add(COUNTRY_TEXT_ALIASES[token]);
+  }
+
+  for (const [alias, code] of Object.entries(COUNTRY_TEXT_ALIASES)) {
+    if (new RegExp(`\\b${alias.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`).test(lower)) {
+      codes.add(code);
+    }
+  }
+
+  for (const [name, code] of COUNTRY_NAME_TO_CODE) {
+    if (new RegExp(`\\b${name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`).test(lower)) {
+      codes.add(code);
+    }
+  }
+
+  return [...codes];
 }
 
 // Matches "GMT+1", "UTC-5", "GMT+5:30", "UTC-05:00"

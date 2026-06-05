@@ -20,6 +20,7 @@ const EU_CODES: string[] = Object.keys(ALL_COUNTRIES).filter((c) => euMember(c))
 const COUNTRY_NAME_TO_CODE = new Map(
   Object.entries(ALL_COUNTRIES).map(([code, country]) => [country.name.toLowerCase(), code]),
 );
+const AMBIGUOUS_TWO_LETTER_WORDS = new Set(["am", "as", "at", "be", "by", "do", "go", "he", "if", "in", "is", "it", "me", "my", "no", "of", "on", "or", "so", "to", "up", "us", "we"]);
 
 /** Normalize a single country code: trim, uppercase, resolve UK→GB alias */
 export function normalizeCode(code: string): string {
@@ -43,7 +44,7 @@ export function inferCountryCodes(text: string): string[] {
   const tokens = lower.split(/[^a-z]+/).filter(Boolean);
 
   for (const token of tokens) {
-    if (token.length === 2) {
+    if (/^[a-z]{2}$/.test(token) && !AMBIGUOUS_TWO_LETTER_WORDS.has(token)) {
       const code = normalizeCode(token);
       if (ALL_COUNTRIES[code]) codes.add(code);
     }

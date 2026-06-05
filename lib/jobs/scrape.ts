@@ -9,16 +9,18 @@ interface SerperOrganic {
 
 interface ApifyLinkedInItem {
   title?: string;
+  link?: string;
   applyUrl?: string;
-  postedAt?: string;
   applyMethod?: string;
-  workRemoteAllowed?: boolean;
-  applicantsCount?: number;
+  postedAt?: string;
+  applicantsCount?: number | string;
   employmentType?: string;
   industries?: string[];
-  salaryInsights?: unknown;
-  workplaceTypes?: string[];
-  country?: string;
+  salary?: unknown;
+  location?: string;
+  companyName?: string;
+  seniorityLevel?: string;
+  jobFunction?: string;
 }
 
 function cleanUrl(url: string): string {
@@ -79,6 +81,23 @@ export function normalizeJobUrl(url: string): string {
   return url
     .replace(/\/application\/?$/, "")   // Ashby: /{org}/{uuid}/application
     .replace(/\/apply\/?$/, "");         // Greenhouse, Lever: /jobs/{id}/apply
+}
+
+function parseApplicantsCount(value: ApifyLinkedInItem["applicantsCount"]): number {
+  if (typeof value === "number") return value;
+  if (typeof value !== "string") return 0;
+
+  const normalized = Number.parseInt(value.replace(/[^\d]/g, ""), 10);
+  return Number.isNaN(normalized) ? 0 : normalized;
+}
+
+function isLinkedInUrl(url: string): boolean {
+  try {
+    const hostname = new URL(url).hostname.toLowerCase();
+    return hostname === "linkedin.com" || hostname.endsWith(".linkedin.com");
+  } catch {
+    return false;
+  }
 }
 
 export async function scrapeSerper(): Promise<RawJob[]> {
@@ -177,37 +196,40 @@ export async function scrapeApify(): Promise<RawJob[]> {
 
   const jobs: RawJob[] = [];
   for (const item of items) {
-      if (item.applyMethod !== "OffsiteApply") continue;
-      if (!item.workRemoteAllowed) continue;
-      if ((item.applicantsCount ?? 0) >= 100) continue;
+    if (item.applyMethod !== "OffsiteApply") continue;
+    if (parseApplicantsCount(item.applicantsCount) >= 100) continue;
 
-      const cleaned = cleanUrl(item.applyUrl ?? "");
-      if (!cleaned) continue;
+    const cleaned = cleanUrl(item.applyUrl ?? "");
+    if (!cleaned) continue;
+    if (isLinkedInUrl(cleaned)) continue;
 
-      // Resolve URL shorteners and redirect chains before normalizing so
-      // normalizeJobUrl sees the final destination and can strip its
-      // /application or /apply suffixes.
-      const resolved = await resolveRedirects(cleaned);
-      if (resolved !== cleaned) {
-        console.log("scrapeApify: redirected", cleaned, "→", resolved);
-      }
+    // Resolve URL shorteners and redirect chains before normalizing so
+    // normalizeJobUrl sees the final destination and can strip its
+    // /application or /apply suffixes.
+    const resolved = await resolveRedirects(cleaned);
+    if (resolved !== cleaned) {
+      console.log("scrapeApify: redirected", cleaned, "→", resolved);
+    }
 
-      const url = normalizeJobUrl(resolved);
-      if (!url) continue;
+    const url = normalizeJobUrl(resolved);
+    if (!url) continue;
 
-      jobs.push({
-        title: item.title ?? "",
-        url,
-        date: item.postedAt,
-        data: {
-          employmentType: item.employmentType,
-          industries: item.industries,
-          salaryInsights: item.salaryInsights,
-          workplaceTypes: item.workplaceTypes,
-          country: item.country,
-        },
-        source: "linkedin",
-      });
+    jobs.push({
+      title: item.title ?? "",
+      url,
+      date: item.postedAt,
+      data: {
+        employmentType: item.employmentType,
+        industries: item.industries,
+        salary: item.salary,
+        location: item.location,
+        companyName: item.companyName,
+        seniorityLevel: item.seniorityLevel,
+        jobFunction: item.jobFunction,
+        linkedinUrl: item.link,
+      },
+      source: "linkedin",
+    });
   }
 
   return jobs;

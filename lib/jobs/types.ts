@@ -20,7 +20,7 @@ export interface StructuredJob {
   equityOffered: boolean;
   scrapedAt: number;
   datePosted?: number;
-  source: "ashby" | "linkedin" | "other";
+  source: "ashby" | "linkedin" | "greenhouse" | "lever" | "recruitee" | "smartrecruiters" | "personio" | "other";
   body: string;
 }
 
@@ -30,7 +30,7 @@ export interface RawJob {
   snippet?: string;
   date?: string;
   data?: Record<string, unknown>;
-  source: "ashby" | "linkedin";
+  source: "ashby" | "linkedin" | "greenhouse" | "lever" | "recruitee" | "smartrecruiters" | "personio";
 }
 
 export interface Subscriber {

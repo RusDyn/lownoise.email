@@ -116,8 +116,7 @@ async function resolveRedirects(url: string): Promise<string> {
   }
 }
 
-// Strip ATS apply-form suffixes so we scrape the job listing, not the form page.
-// Form pages return near-empty markdown because form/input tags are excluded.
+/** Strip ATS apply-form suffixes so we scrape the job listing, not the form page. */
 export function normalizeJobUrl(url: string): string {
   return url
     .replace(/\/application\/?$/, "")   // Ashby: /{org}/{uuid}/application
@@ -141,6 +140,7 @@ function isLinkedInUrl(url: string): boolean {
   }
 }
 
+/** Scrape Ashby job listings from Google via Serper API. */
 export async function scrapeSerper(): Promise<RawJob[]> {
   const apiKey = process.env.SERPER_API_KEY!;
   const maxPages = 5;
@@ -240,6 +240,7 @@ async function runApifyActor<T>(
   }
 }
 
+/** Scrape offsite-apply LinkedIn jobs via Apify actor. */
 export async function scrapeApifyLinkedIn(): Promise<RawJob[]> {
   const items = await runApifyActor<ApifyLinkedInItem>(
     "hKByXkMQaC5Qt9UMN",
@@ -339,9 +340,8 @@ export function isBoviJobFresh(
   return postedMs >= now - maxAgeMs;
 }
 
-// Bovi's Greenhouse/Lever/Ashby job scraper — multi-ATS coverage with preset lists
-// for top-tech, AI/ML, devtools, and fintech companies. Remote-only, max 50 jobs
-// per company, with a $0.10 cost cap per run.
+/** Multi-ATS job scraper (Greenhouse/Lever/Ashby/Recruitee/SmartRecruiters/Personio)
+ *  via Apify Bovi actor. Uses preset lists, remote-only, with a $0.10 cost cap. */
 export async function scrapeApifyBovi(): Promise<RawJob[]> {
   const items = await runApifyActor<ApifyBoviItem>(
     "GeQK0uepRsjeAVzne",
@@ -409,6 +409,7 @@ export async function scrapeApifyBovi(): Promise<RawJob[]> {
   return jobs;
 }
 
+/** Scrape a job listing page via Firecrawl and return cleaned markdown. */
 export async function scrapeJobPage(url: string): Promise<string> {
   const res = await fetch("https://api.firecrawl.dev/v1/scrape", {
     method: "POST",

@@ -1,5 +1,5 @@
 import { inngest } from "@/lib/inngest";
-import { scrapeSerper, scrapeApify, scrapeJobPage, normalizeJobUrl } from "@/lib/jobs/scrape";
+import { scrapeSerper, scrapeApifyLinkedIn, scrapeApifyBovi, scrapeJobPage, normalizeJobUrl } from "@/lib/jobs/scrape";
 import { structureJob } from "@/lib/jobs/structure";
 import { isKnownUrl, storeJob } from "@/lib/jobs/store";
 import { isBannedDomain, detectSuspiciousDomain } from "@/lib/jobs/banlist";
@@ -10,13 +10,17 @@ export const scrapeJobs = inngest.createFunction(
   async ({ step }) => {
     // Step 1: Scrape all sources in parallel
     const scraped = await step.run("scrape-sources", async () => {
-      const [serper, apify] = await Promise.all([scrapeSerper(), scrapeApify()]);
-      return { serper, apify };
+      const [serper, apifyLinkedIn, apifyBovi] = await Promise.all([
+        scrapeSerper(),
+        scrapeApifyLinkedIn(),
+        scrapeApifyBovi(),
+      ]);
+      return { serper, apifyLinkedIn, apifyBovi };
     });
 
     // Step 2: Merge, deduplicate by URL, filter already-known and banned domains
     const newJobs = (await step.run("dedup-filter", async (): Promise<RawJob[]> => {
-      const merged = [...scraped.serper, ...scraped.apify].map((j) => ({
+      const merged = [...scraped.serper, ...scraped.apifyLinkedIn, ...scraped.apifyBovi].map((j) => ({
         ...j,
         url: normalizeJobUrl(j.url),
       }));

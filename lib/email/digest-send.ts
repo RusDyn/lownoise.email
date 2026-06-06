@@ -1,6 +1,6 @@
 import { Resend } from "resend";
 import { createManageToken } from "@/lib/auth";
-import { listActiveContacts, type ResendContact } from "@/lib/contacts";
+import { callResendWithRetry, listActiveContacts, type ResendContact } from "@/lib/contacts";
 import { buildBroadcastHtml, formatJobHtml, JOB_DIVIDER_HTML } from "@/lib/email/digest";
 import { stripTimezone, extractTimezone } from "@/lib/jobs/normalize";
 import { filterAndRankJobs } from "@/lib/jobs/score";
@@ -109,7 +109,7 @@ export async function prepareDigestRecipients({
   for (let i = 0; i < subscribers.length; i += batchSize) {
     const batch = subscribers.slice(i, i + batchSize);
     const counts = await Promise.all(
-      batch.map(async (sub): Promise<number> => {
+      batch.map(async (sub, idx): Promise<number> => {
         const ranked = filterAndRankJobs(jobs, sub);
         if (!includeEmptyMatches && ranked.length === 0) return 0;
 
@@ -121,20 +121,32 @@ export async function prepareDigestRecipients({
         const manageToken = await createManageToken(sub.email);
         const manageUrl = `${BASE_URL}/manage?token=${encodeURIComponent(manageToken)}`;
 
-        const { error: updateError } = await resend.contacts.update({
-          id: sub.id,
-          properties: {
-            jobs_count: ranked.length === 0 ? "No" : String(ranked.length),
-            jobs: jobsHtml,
-            manage_url: manageUrl,
-          },
-        });
+        // Stagger API calls within the batch so we don't spike Resend's
+        // rate limiter with 4 simultaneous contacts.update calls.
+        if (idx > 0) await new Promise((r) => setTimeout(r, idx * 200));
+
+        const { error: updateError } = await callResendWithRetry(
+          () =>
+            resend.contacts.update({
+              id: sub.id,
+              properties: {
+                jobs_count: ranked.length === 0 ? "No" : String(ranked.length),
+                jobs: jobsHtml,
+                manage_url: manageUrl,
+              },
+            }),
+          `contacts.update[${sub.id}]`,
+        );
         if (updateError) throw new Error(`contacts.update failed for ${sub.id}: ${JSON.stringify(updateError)}`);
 
-        const { error: segmentError } = await resend.contacts.segments.add({
-          contactId: sub.id,
-          segmentId,
-        });
+        const { error: segmentError } = await callResendWithRetry(
+          () =>
+            resend.contacts.segments.add({
+              contactId: sub.id,
+              segmentId,
+            }),
+          `contacts.segments.add[${sub.id}]`,
+        );
         if (segmentError) {
           throw new Error(`contacts.segments.add failed for ${sub.id}: ${JSON.stringify(segmentError)}`);
         }

@@ -9,6 +9,60 @@ export interface ResendContact {
 }
 
 /**
+ * Generic wrapper that retries a Resend API call on 429 rate limits with
+ * exponential backoff. Preserves the return shape `{ data, error }` so
+ * callers can inspect errors from the final attempt.
+ *
+ * Non-retriable status codes (403, 404, 422) break immediately.
+ * 429 reads `retry-after` when available; otherwise uses 2^attempt * 1000ms.
+ */
+export async function callResendWithRetry<T>(
+  operation: () => Promise<{ data: T | null; error: unknown }>,
+  label: string,
+  maxRetries = 3,
+): Promise<{ data: T | null; error: unknown }> {
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    const { data, error } = await operation();
+
+    if (!error) return { data, error };
+
+    const status = (error as { statusCode?: number }).statusCode;
+    const retryAfter = (error as { headers?: Record<string, string> }).headers?.["retry-after"];
+
+    // Non-retriable — surface the error immediately
+    if (status === 403 || status === 404 || status === 422) return { data, error };
+
+    if (status === 429 && attempt < maxRetries) {
+      const delay = retryAfter
+        ? parseInt(retryAfter, 10) * 1000
+        : Math.pow(2, attempt) * 1000 * (0.75 + Math.random() * 0.5);
+      console.warn(
+        `resend ${label} rate-limited (attempt ${attempt + 1}/${maxRetries + 1}), ` +
+        `retrying in ${delay}ms`,
+      );
+      await new Promise((r) => setTimeout(r, delay));
+      continue;
+    }
+
+    // Unknown error or exhausted retries — surface it
+    if (attempt < maxRetries && status == null) {
+      // Unknown transient error: retry with backoff
+      const delay = Math.pow(2, attempt) * 1000 * (0.75 + Math.random() * 0.5);
+      console.warn(
+        `resend ${label} failed (attempt ${attempt + 1}/${maxRetries + 1}), ` +
+        `status=${status ?? "unknown"}, retrying in ${delay}ms`,
+      );
+      await new Promise((r) => setTimeout(r, delay));
+      continue;
+    }
+
+    return { data, error };
+  }
+
+  return { data: null, error: new Error(`${label}: exhausted retries`) };
+}
+
+/**
  * Fetch a single contact with retry+backoff on 429 rate limits.
  * Returns null only when the contact genuinely doesn't exist or retries are
  * exhausted; logs transient errors so they surface in observability.
@@ -20,55 +74,27 @@ async function fetchContactWithRetry(
   unsubscribed: boolean,
   maxRetries = 3,
 ): Promise<ResendContact | null> {
-  for (let attempt = 0; attempt <= maxRetries; attempt++) {
-    const { data: detail, error } = await resend.contacts.get(id);
+  const { data: detail, error } = await callResendWithRetry(
+    () => resend.contacts.get(id),
+    `contacts.get[${id}]`,
+    maxRetries,
+  );
 
-    if (detail) {
-      // Zod schema coerces every property to string so downstream
-      // calls (.toLowerCase, .split, .match, .replace) never crash.
-      // safeParse used to guard against non-object detail.properties (e.g. arrays).
-      const parsed = contactPropertiesSchema.safeParse(detail.properties ?? {});
-      if (!parsed.success) {
-        console.error(
-          `contactPropertiesSchema parse failed for ${id} (${email}):`,
-          parsed.error.flatten(),
-        );
-      }
-      const props = parsed.success ? parsed.data : ({} as Record<string, string>);
-      return {
-        id,
-        email,
-        properties: props,
-        unsubscribed,
-      };
-    }
+  // 403/404 or exhausted retries — contact doesn't exist or is inaccessible
+  if (error || !detail) return null;
 
-    if (error) {
-      const status = (error as { statusCode?: number }).statusCode;
-      const retryAfter = (error as { headers?: Record<string, string> }).headers?.["retry-after"];
-      console.error(
-        `resend.contacts.get failed for ${id} (attempt ${attempt + 1}/${maxRetries + 1}):`,
-        `status=${status ?? "unknown"} retryAfter=${retryAfter ?? "none"}`,
-        error,
-      );
-
-      // Non-retriable: don't waste attempts on forbidden or missing contacts
-      if (status === 403 || status === 404) break;
-
-      if (status === 429 && attempt < maxRetries) {
-        const delay = retryAfter
-          ? parseInt(retryAfter, 10) * 1000
-          : Math.pow(2, attempt) * 1000;
-        await new Promise((r) => setTimeout(r, delay));
-        continue;
-      }
-    }
-
-    // Genuinely missing (no error, no detail) — no point retrying
-    break;
+  // Zod schema coerces every property to string so downstream
+  // calls (.toLowerCase, .split, .match, .replace) never crash.
+  // safeParse used to guard against non-object detail.properties (e.g. arrays).
+  const parsed = contactPropertiesSchema.safeParse(detail.properties ?? {});
+  if (!parsed.success) {
+    console.error(
+      `contactPropertiesSchema parse failed for ${id} (${email}):`,
+      parsed.error.flatten(),
+    );
   }
-
-  return null;
+  const props = parsed.success ? parsed.data : ({} as Record<string, string>);
+  return { id, email, properties: props, unsubscribed };
 }
 
 /**

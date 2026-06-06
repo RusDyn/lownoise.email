@@ -10,11 +10,17 @@ export const scrapeJobs = inngest.createFunction(
   async ({ step }) => {
     // Step 1: Scrape all sources in parallel
     const scraped = await step.run("scrape-sources", async () => {
-      const [serper, apifyLinkedIn, apifyBovi] = await Promise.all([
+      const results = await Promise.allSettled([
         scrapeSerper(),
         scrapeApifyLinkedIn(),
         scrapeApifyBovi(),
       ]);
+      const [serper, apifyLinkedIn, apifyBovi] = results.map((r, i) => {
+        if (r.status === "fulfilled") return r.value;
+        const names = ["serper", "apifyLinkedIn", "apifyBovi"];
+        console.error(`scrape-sources: ${names[i]} failed:`, r.reason);
+        return [];
+      });
       return { serper, apifyLinkedIn, apifyBovi };
     });
 

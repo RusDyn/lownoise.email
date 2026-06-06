@@ -2,10 +2,14 @@
 // and 1-day filter behavior against real data.
 // Run: node --env-file=.env.local --import=tsx scripts/smoke-bovi.ts
 
-import { isBoviJobFresh, BOVI_MAX_AGE_MS } from "../lib/jobs/scrape";
+import { BOVI_MAX_AGE_MS } from "../lib/jobs/scrape";
 
 void (async () => {
-const token = process.env.APIFY_API_KEY!;
+const token = process.env.APIFY_API_KEY;
+if (!token) {
+  console.error("APIFY_API_KEY is not set in environment");
+  process.exit(1);
+}
 const now = Date.now();
 
 console.log("=== Bovi Actor Smoke Test ===");
@@ -30,7 +34,10 @@ const res = await fetch(endpoint, {
   signal: AbortSignal.timeout(310_000),
 });
 
-console.log(`HTTP ${res.status}`);
+if (!res.ok) {
+  const body = await res.text();
+  throw new Error(`Apify returned ${res.status}: ${body.slice(0, 500)}`);
+}
 const items = (await res.json()) as Record<string, unknown>[];
 console.log(`Raw items: ${items.length}`);
 console.log();

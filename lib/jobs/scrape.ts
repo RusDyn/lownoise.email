@@ -46,6 +46,47 @@ function isAshbyCompanyPage(url: string): boolean {
   }
 }
 
+// Reject hosts that are loopback, private, link-local, or otherwise internal.
+// Prevents SSRF when resolveRedirects fetches URLs sourced from third-party data.
+function isPrivateHost(url: string): boolean {
+  try {
+    const hostname = new URL(url).hostname.toLowerCase();
+    // localhost and IPv6 loopback
+    if (hostname === "localhost" || hostname === "[::1]" || hostname === "::1") return true;
+    // IPv4 patterns
+    const m = hostname.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
+    if (!m) return false;
+    const a = Number(m[1]), b = Number(m[2]);
+    return a === 10 || a === 127 || a === 0                          // private / loopback / "this"
+      || (a === 172 && b >= 16 && b <= 31)                            // private
+      || (a === 192 && b === 168)                                     // private
+      || (a === 169 && b === 254);                                    // link-local
+  } catch {
+    return true; // unparseable URL → reject
+  }
+}
+
+// Strip known ATS tracking/attribution query params that break URL dedup.
+// Keeps the path intact — only removes query-string noise.
+function stripTrackingParams(url: string): string {
+  const TRACKING_PARAMS = new Set([
+    "gh_jid", "gh_src",           // Greenhouse
+    "lever-source", "lever-origin", // Lever
+    "utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term",
+    "ref", "refsrc", "source", "referrer", "rk",
+  ]);
+  try {
+    const u = new URL(url);
+    let changed = false;
+    for (const p of TRACKING_PARAMS) {
+      if (u.searchParams.has(p)) { u.searchParams.delete(p); changed = true; }
+    }
+    return changed ? `${u.origin}${u.pathname}${u.search}${u.hash}` : url;
+  } catch {
+    return url;
+  }
+}
+
 // Follow HTTP redirects to resolve URL shorteners (click.appcast.io, lnkd.in,
 // LinkedIn external-job trackers, etc.) to the final destination URL.
 //
@@ -222,6 +263,7 @@ export async function scrapeApifyLinkedIn(): Promise<RawJob[]> {
     const cleaned = cleanUrl(item.applyUrl ?? "");
     if (!cleaned) continue;
     if (isLinkedInUrl(cleaned)) continue;
+    if (isPrivateHost(cleaned)) continue;
 
     // Resolve URL shorteners and redirect chains before normalizing so
     // normalizeJobUrl sees the final destination and can strip its
@@ -231,7 +273,8 @@ export async function scrapeApifyLinkedIn(): Promise<RawJob[]> {
       console.log("scrapeApifyLinkedIn: redirected", cleaned, "→", resolved);
     }
 
-    const url = normalizeJobUrl(resolved);
+    const canonical = stripTrackingParams(resolved);
+    const url = normalizeJobUrl(canonical);
     if (!url) continue;
 
     jobs.push({
@@ -304,7 +347,7 @@ export async function scrapeApifyBovi(): Promise<RawJob[]> {
     "GeQK0uepRsjeAVzne",
     {
       includeDescriptions: true,
-      onlyNewSinceLastRun: true,
+      onlyNewSinceLastRun: false,
       presetLists: ["top-tech", "ai-ml", "devtools", "fintech"],
       remoteOnly: true,
       maxJobsPerCompany: 50,
@@ -326,13 +369,15 @@ export async function scrapeApifyBovi(): Promise<RawJob[]> {
 
     const cleaned = cleanUrl(item.url);
     if (!cleaned) continue;
+    if (isPrivateHost(cleaned)) continue;
 
     const resolved = await resolveRedirects(cleaned);
     if (resolved !== cleaned) {
       console.log("scrapeApifyBovi: redirected", cleaned, "→", resolved);
     }
 
-    const url = normalizeJobUrl(resolved);
+    const canonical = stripTrackingParams(resolved);
+    const url = normalizeJobUrl(canonical);
     if (!url) continue;
 
     jobs.push({

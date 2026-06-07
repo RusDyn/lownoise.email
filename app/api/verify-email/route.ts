@@ -1,6 +1,7 @@
 import { Resend } from "resend";
 import { createPendingToken } from "@/lib/auth";
 import { confirmationHtml } from "@/lib/email/confirm";
+import { logger } from "@/lib/logger";
 
 export const runtime = "edge";
 
@@ -37,7 +38,7 @@ export async function POST(req: Request) {
   });
 
   if (error) {
-    console.error("resend confirmation email error", error);
+    logger.error("resend confirmation email failed", { error });
     return Response.json({ error: "failed to send confirmation email, please try again" }, { status: 502 });
   }
 

@@ -1,5 +1,6 @@
 import OpenAI from "openai";
 import type { RawJob, StructuredJob } from "./types";
+import { logger } from "@/lib/logger";
 
 function getClient() {
   return new OpenAI({
@@ -78,7 +79,7 @@ export async function structureJob(raw: RawJob, markdown: string): Promise<Struc
     const parsed = JSON.parse(content) as Partial<StructuredJob>;
 
     if (!parsed.title || !parsed.company || !parsed.workMode) {
-      console.error("structureJob: missing required fields for", raw.url);
+      logger.error("structureJob: missing required fields", { url: raw.url });
       return null;
     }
 
@@ -109,7 +110,7 @@ export async function structureJob(raw: RawJob, markdown: string): Promise<Struc
       body: markdown.slice(0, 8000),
     };
   } catch (err) {
-    console.error("structureJob error for", raw.url, err);
+    logger.error("structureJob failed", { url: raw.url, error: err });
     return null;
   }
 }

@@ -2,6 +2,7 @@ import { Resend } from "resend";
 import { createManageToken } from "@/lib/auth";
 import { findContactByEmail } from "@/lib/contacts";
 import { manageLinkHtml } from "@/lib/email/manage-link";
+import { logger } from "@/lib/logger";
 
 export const runtime = "edge";
 
@@ -45,7 +46,7 @@ export async function POST(req: Request) {
   });
 
   if (error) {
-    console.error("resend manage-link email error", error);
+    logger.error("resend manage-link email failed", { error });
     // Still return ok — don't leak whether the send succeeded
     return Response.json({ ok: true });
   }

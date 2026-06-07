@@ -8,6 +8,7 @@ import {
   selectHourlySubscribers,
   sendDigestBroadcast,
 } from "@/lib/email/digest-send";
+import { logger } from "@/lib/logger";
 
 export const sendDigestHourly = inngest.createFunction(
   { id: "send-digest-hourly", name: "Send Hourly Premium Digest", triggers: [{ cron: "0 * * * *" }] },
@@ -23,13 +24,19 @@ export const sendDigestHourly = inngest.createFunction(
       getJobsSince(Date.now() - 60 * 60 * 1000)
     );
 
-    if (jobs.length === 0) return { sent: 0, reason: "no jobs this hour" };
+    if (jobs.length === 0) {
+      logger.metric("digest_hourly_sent", 0);
+      return { sent: 0, reason: "no jobs this hour" };
+    }
 
     const subscribers = await step.run("list-contacts", async () =>
       selectHourlySubscribers(await loadActiveSubscribers())
     );
 
-    if (subscribers.length === 0) return { sent: 0, reason: "no hourly subscribers" };
+    if (subscribers.length === 0) {
+      logger.metric("digest_hourly_sent", 0);
+      return { sent: 0, reason: "no hourly subscribers" };
+    }
 
     const recipients = await step.run("process-contacts", async () => {
       const resend = new Resend(process.env.RESEND_API_KEY);
@@ -45,7 +52,10 @@ export const sendDigestHourly = inngest.createFunction(
       });
     });
 
-    if (recipients === 0) return { sent: 0, reason: "no hourly matches" };
+    if (recipients === 0) {
+      logger.metric("digest_hourly_sent", 0);
+      return { sent: 0, reason: "no hourly matches" };
+    }
 
     await step.run("send-broadcast", async () => {
       const resend = new Resend(process.env.RESEND_API_KEY);
@@ -54,6 +64,8 @@ export const sendDigestHourly = inngest.createFunction(
       return sendDigestBroadcast({ resend, segmentId, name: "Hourly premium digest" });
     });
 
+    logger.metric("digest_hourly_sent", recipients);
+    logger.info("digest hourly run complete", { sent: recipients, totalJobs: jobs.length });
     return { sent: recipients };
   }
 );

@@ -1,5 +1,6 @@
 import { Resend } from "resend";
 import { contactPropertiesSchema } from "@/lib/schemas";
+import { logger } from "@/lib/logger";
 
 export interface ResendContact {
   id: string;
@@ -36,9 +37,9 @@ export async function callResendWithRetry<T>(
       const delay = retryAfter
         ? parseInt(retryAfter, 10) * 1000
         : Math.pow(2, attempt) * 1000 * (0.75 + Math.random() * 0.5);
-      console.warn(
-        `resend ${label} rate-limited (attempt ${attempt + 1}/${maxRetries + 1}), ` +
-        `retrying in ${delay}ms`,
+      logger.warn(
+        `resend ${label} rate-limited`,
+        { attempt: attempt + 1, maxRetries: maxRetries + 1, delayMs: delay },
       );
       await new Promise((r) => setTimeout(r, delay));
       continue;
@@ -48,9 +49,9 @@ export async function callResendWithRetry<T>(
     if (attempt < maxRetries && status == null) {
       // Unknown transient error: retry with backoff
       const delay = Math.pow(2, attempt) * 1000 * (0.75 + Math.random() * 0.5);
-      console.warn(
-        `resend ${label} failed (attempt ${attempt + 1}/${maxRetries + 1}), ` +
-        `status=${status ?? "unknown"}, retrying in ${delay}ms`,
+      logger.warn(
+        `resend ${label} failed, retrying`,
+        { attempt: attempt + 1, maxRetries: maxRetries + 1, status, delayMs: delay },
       );
       await new Promise((r) => setTimeout(r, delay));
       continue;
@@ -88,10 +89,11 @@ async function fetchContactWithRetry(
   // safeParse used to guard against non-object detail.properties (e.g. arrays).
   const parsed = contactPropertiesSchema.safeParse(detail.properties ?? {});
   if (!parsed.success) {
-    console.error(
-      `contactPropertiesSchema parse failed for ${id} (${email}):`,
-      parsed.error.flatten(),
-    );
+    logger.error("contactPropertiesSchema parse failed", {
+      contactId: id,
+      email,
+      issues: parsed.error.flatten(),
+    });
   }
   const props = parsed.success ? parsed.data : ({} as Record<string, string>);
   return { id, email, properties: props, unsubscribed };
@@ -165,7 +167,7 @@ export async function listActiveContacts(): Promise<ResendContact[]> {
     });
 
     if (error || !data) {
-      console.error("resend contacts.list error", error);
+      logger.error("resend contacts.list failed", { error });
       break;
     }
 

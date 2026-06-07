@@ -1,5 +1,6 @@
 import { Resend } from "resend";
 import { welcomeHtml } from "@/lib/email/welcome";
+import { logger } from "@/lib/logger";
 
 export const runtime = "edge";
 
@@ -68,7 +69,7 @@ export async function POST(req: Request) {
   });
 
   if (contactError) {
-    console.error("resend contact error", contactError);
+    logger.error("resend contact create failed", { error: contactError });
     return Response.json({ error: "failed to subscribe, please try again" }, { status: 502 });
   }
 
@@ -85,7 +86,7 @@ export async function POST(req: Request) {
 
   if (emailError) {
     // Contact was created — don't fail the request, just log
-    console.error("resend welcome email error", emailError);
+    logger.error("resend welcome email failed", { error: emailError });
   }
 
   return Response.json({ ok: true });

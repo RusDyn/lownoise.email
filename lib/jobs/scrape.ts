@@ -1,4 +1,5 @@
 import type { RawJob } from "./types";
+import { logger } from "@/lib/logger";
 
 interface SerperOrganic {
   title: string;
@@ -160,7 +161,7 @@ export async function scrapeSerper(): Promise<RawJob[]> {
     });
 
     if (!res.ok) {
-      console.error(`Serper page ${page} failed: ${res.status}`);
+      logger.error(`Serper page ${page} failed`, { statusCode: res.status });
       break;
     }
 
@@ -174,7 +175,7 @@ export async function scrapeSerper(): Promise<RawJob[]> {
       // Skip Ashby company pages — they list multiple jobs and won't
       // have the required title/company/workMode fields for a single listing.
       if (isAshbyCompanyPage(cleaned)) {
-        console.warn("scrapeSerper: skipping ashby company page:", cleaned);
+        logger.warn("scrapeSerper: skipping ashby company page", { url: cleaned });
         continue;
       }
 
@@ -183,7 +184,7 @@ export async function scrapeSerper(): Promise<RawJob[]> {
       // /application or /apply suffixes.
       const resolved = await resolveRedirects(cleaned);
       if (resolved !== cleaned) {
-        console.log("scrapeSerper: redirected", cleaned, "→", resolved);
+        logger.debug("scrapeSerper: redirected", { from: cleaned, to: resolved });
       }
 
       const url = normalizeJobUrl(resolved);
@@ -229,13 +230,13 @@ async function runApifyActor<T>(
     });
 
     if (!res.ok) {
-      console.error(`Apify actor ${actorId} failed: ${res.status}`);
+      logger.error(`Apify actor ${actorId} failed`, { statusCode: res.status });
       return [];
     }
 
     return (await res.json()) as T[];
   } catch (err) {
-    console.error(`Apify actor ${actorId} error:`, err);
+    logger.error(`Apify actor ${actorId} error`, { error: err });
     return [];
   }
 }
@@ -271,7 +272,7 @@ export async function scrapeApifyLinkedIn(): Promise<RawJob[]> {
     // /application or /apply suffixes.
     const resolved = await resolveRedirects(cleaned);
     if (resolved !== cleaned) {
-      console.log("scrapeApifyLinkedIn: redirected", cleaned, "→", resolved);
+      logger.debug("scrapeApifyLinkedIn: redirected", { from: cleaned, to: resolved });
     }
 
     const canonical = stripTrackingParams(resolved);
@@ -373,7 +374,7 @@ export async function scrapeApifyBovi(): Promise<RawJob[]> {
 
     const resolved = await resolveRedirects(cleaned);
     if (resolved !== cleaned) {
-      console.log("scrapeApifyBovi: redirected", cleaned, "→", resolved);
+      logger.debug("scrapeApifyBovi: redirected", { from: cleaned, to: resolved });
     }
 
     const canonical = stripTrackingParams(resolved);
@@ -403,7 +404,7 @@ export async function scrapeApifyBovi(): Promise<RawJob[]> {
   }
 
   if (skippedOld > 0) {
-    console.log(`scrapeApifyBovi: skipped ${skippedOld} job(s) older than 1 day`);
+    logger.debug(`scrapeApifyBovi: skipped ${skippedOld} stale job(s)`);
   }
 
   return jobs;

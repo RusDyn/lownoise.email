@@ -119,7 +119,7 @@ export async function prepareDigestRecipients({
         if (ranked.length === 0) {
           totalZeroMatch++;
           logger.info("digest: zero matches for subscriber", {
-            email: sub.email,
+            contactId: sub.id,
             keywords: sub.keywords.join(","),
             remote: sub.remote,
             totalJobs: jobs.length,
@@ -128,7 +128,7 @@ export async function prepareDigestRecipients({
           totalMatched += ranked.length;
           // Log top-3 scores so you can spot scoring anomalies
           logger.debug("digest: subscriber matched", {
-            email: sub.email,
+            contactId: sub.id,
             matchCount: ranked.length,
             topScores: ranked.slice(0, 3).map((j) =>
               `${j.company}:${j.title.slice(0, 40)}`

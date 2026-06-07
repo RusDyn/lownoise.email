@@ -33,7 +33,7 @@ export default async function proxy(request: NextRequest) {
   if (count > MAX_REQUESTS) {
     Sentry.addBreadcrumb({
       category: "rate_limit",
-      message: `Rate limit hit for IP ${ip} (${count}/${MAX_REQUESTS})`,
+      message: `Rate limit hit (${count}/${MAX_REQUESTS})`,
       level: "warning",
     });
     return new NextResponse("Too Many Requests", {

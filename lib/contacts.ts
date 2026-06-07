@@ -91,7 +91,6 @@ async function fetchContactWithRetry(
   if (!parsed.success) {
     logger.error("contactPropertiesSchema parse failed", {
       contactId: id,
-      email,
       issues: parsed.error.flatten(),
     });
   }

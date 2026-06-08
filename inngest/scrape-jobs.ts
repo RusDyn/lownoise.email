@@ -4,6 +4,7 @@ import { structureJob } from "@/lib/jobs/structure";
 import { isKnownUrl, storeJob } from "@/lib/jobs/store";
 import { isBannedDomain, detectSuspiciousDomain } from "@/lib/jobs/banlist";
 import type { RawJob } from "@/lib/jobs/types";
+import { logger } from "@/lib/logger";
 
 export const scrapeJobs = inngest.createFunction(
   { id: "scrape-jobs", name: "Scrape Jobs", triggers: [{ cron: "50 * * * *" }] },
@@ -18,7 +19,7 @@ export const scrapeJobs = inngest.createFunction(
       const [serper, apifyLinkedIn, apifyBovi] = results.map((r, i) => {
         if (r.status === "fulfilled") return r.value;
         const names = ["serper", "apifyLinkedIn", "apifyBovi"];
-        console.error(`scrape-sources: ${names[i]} failed:`, r.reason);
+        logger.error(`scrape-sources: ${names[i]} failed`, { error: r.reason });
         return [];
       });
       return { serper, apifyLinkedIn, apifyBovi };
@@ -45,7 +46,7 @@ export const scrapeJobs = inngest.createFunction(
         // Log suspicious (not yet banned) domains for manual review
         const suspicion = detectSuspiciousDomain(j.url);
         if (suspicion.suspicious) {
-          console.warn("scrape-jobs: suspicious domain:", j.url, suspicion.reasons);
+          logger.warn("scrape-jobs: suspicious domain", { url: j.url, reasons: suspicion.reasons });
         }
 
         seen.add(j.url);
@@ -53,7 +54,7 @@ export const scrapeJobs = inngest.createFunction(
       });
 
       if (bannedCount > 0) {
-        console.log(`scrape-jobs: filtered ${bannedCount} banned-domain job(s)`);
+        logger.debug(`scrape-jobs: filtered ${bannedCount} banned-domain job(s)`);
       }
 
       const knownFlags = await Promise.all(deduped.map((j) => isKnownUrl(j.url)));
@@ -98,7 +99,7 @@ export const scrapeJobs = inngest.createFunction(
             await storeJob(structured, markdowns[k]!);
             batchStored++;
           } catch (err) {
-            console.error(`Failed to process ${batch[k].url}:`, err);
+            logger.error(`Failed to process job`, { url: batch[k].url, error: err });
           }
         }
         return { batchStored, newFingerprints };

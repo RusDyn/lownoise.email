@@ -5,6 +5,7 @@ import { buildBroadcastHtml, formatJobHtml, JOB_DIVIDER_HTML } from "@/lib/email
 import { stripTimezone, extractTimezone } from "@/lib/jobs/normalize";
 import { filterAndRankJobs } from "@/lib/jobs/score";
 import type { StructuredJob, Subscriber } from "@/lib/jobs/types";
+import { logger } from "@/lib/logger";
 
 const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL ?? "https://lownoise.email";
 export const DEFAULT_DAILY_SEND_HOUR_UTC = "16";
@@ -104,6 +105,8 @@ export async function prepareDigestRecipients({
   includeEmptyMatches,
 }: PrepareDigestOptions): Promise<number> {
   let recipients = 0;
+  let totalMatched = 0;
+  let totalZeroMatch = 0;
   const batchSize = 4;
 
   for (let i = 0; i < subscribers.length; i += batchSize) {
@@ -111,6 +114,28 @@ export async function prepareDigestRecipients({
     const counts = await Promise.all(
       batch.map(async (sub, idx): Promise<number> => {
         const ranked = filterAndRankJobs(jobs, sub);
+
+        // Log matching decisions — searchable in Sentry as info-level events
+        if (ranked.length === 0) {
+          totalZeroMatch++;
+          logger.info("digest: zero matches for subscriber", {
+            contactId: sub.id,
+            keywords: sub.keywords.join(","),
+            remote: sub.remote,
+            totalJobs: jobs.length,
+          });
+        } else {
+          totalMatched += ranked.length;
+          // Log top-3 scores so you can spot scoring anomalies
+          logger.debug("digest: subscriber matched", {
+            contactId: sub.id,
+            matchCount: ranked.length,
+            topScores: ranked.slice(0, 3).map((j) =>
+              `${j.company}:${j.title.slice(0, 40)}`
+            ),
+          });
+        }
+
         if (!includeEmptyMatches && ranked.length === 0) return 0;
 
         const jobsHtml =
@@ -160,6 +185,18 @@ export async function prepareDigestRecipients({
       await new Promise((r) => setTimeout(r, 1000));
     }
   }
+
+  // Aggregate matching summary — searchable in Sentry
+  logger.info("digest: matching complete", {
+    totalSubscribers: subscribers.length,
+    recipients,
+    totalMatched,
+    totalZeroMatch,
+    totalJobs: jobs.length,
+    matchRate: subscribers.length > 0
+      ? `${Math.round((recipients / subscribers.length) * 100)}%`
+      : "0%",
+  });
 
   return recipients;
 }

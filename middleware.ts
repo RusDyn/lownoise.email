@@ -1,6 +1,7 @@
 import { Redis } from "@upstash/redis";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import * as Sentry from "@sentry/nextjs";
 
 const WINDOW_S = 60 * 60;
 const MAX_REQUESTS = 5;
@@ -30,6 +31,11 @@ export default async function proxy(request: NextRequest) {
   const count = (await redis.eval(luaScript, [key], [String(WINDOW_S)])) as number;
 
   if (count > MAX_REQUESTS) {
+    Sentry.addBreadcrumb({
+      category: "rate_limit",
+      message: `Rate limit hit (${count}/${MAX_REQUESTS})`,
+      level: "warning",
+    });
     return new NextResponse("Too Many Requests", {
       status: 429,
       headers: {

@@ -18,7 +18,7 @@ const nextConfig: NextConfig = {
               "script-src 'self' 'unsafe-inline'",
               "style-src 'self' 'unsafe-inline'",
               "font-src 'self'",
-              "connect-src 'self'",
+              "connect-src 'self' https://*.sentry.io",
               "img-src 'self' data:",
               "frame-ancestors 'none'",
             ].join("; "),

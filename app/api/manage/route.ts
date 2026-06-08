@@ -1,6 +1,7 @@
 import { Resend } from "resend";
 import { verifyManageToken } from "@/lib/auth";
 import { welcomeHtml } from "@/lib/email/welcome";
+import { logger } from "@/lib/logger";
 
 export const runtime = "edge";
 
@@ -116,7 +117,7 @@ export async function POST(req: Request) {
       properties,
     });
     if (error) {
-      console.error("resend contacts.update error", error);
+      logger.error("resend contacts.update failed", { error });
       return Response.json({ error: "failed to update preferences, please try again" }, { status: 502 });
     }
   } else {
@@ -127,7 +128,7 @@ export async function POST(req: Request) {
       properties,
     });
     if (contactError) {
-      console.error("resend contacts.create error", contactError);
+      logger.error("resend contacts.create failed", { error: contactError });
       return Response.json({ error: "failed to subscribe, please try again" }, { status: 502 });
     }
 
@@ -143,7 +144,7 @@ export async function POST(req: Request) {
     });
 
     if (emailError) {
-      console.error("resend welcome email error", emailError);
+      logger.error("resend welcome email failed", { error: emailError });
     }
   }
 
